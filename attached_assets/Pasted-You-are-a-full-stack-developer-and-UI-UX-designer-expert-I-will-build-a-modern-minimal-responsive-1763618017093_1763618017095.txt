@@ -1,0 +1,117 @@
+You are a full-stack developer and UI/UX designer expert. I will build a modern, minimal, responsive React website for a Sri Lankan coffee & tea shop called "ZEN CAFE" using MySQL (I use MySQL Workbench for DB design). Your job is to produce a complete, copy‑pasteable project plan and code scaffolding so I (or a developer) can implement the site quickly. Think step by step and produce clear, well‑formatted outputs (use lists, tables, and code blocks where appropriate). Do not write marketing copy — focus on technical and design deliverables.
+
+Deliverables (exactly and in order)
+
+1. Project summary and goals (1–2 short paragraphs).
+
+2. Suggested tech stack and reasons.
+
+3. UI/UX design system (color palette, typography, spacing, iconography, imagery sources, accessibility rules).
+
+4. Complete list of pages + routes and purpose for each.
+
+5. Component inventory (reusable React components + brief responsibility for each).
+
+6. Folder structure and example package.json with required dependencies and scripts.
+
+7. MySQL database design:
+
+- ER diagram description (tables and relationships).
+
+- SQL CREATE TABLE statements for all tables.
+
+- Example seed data (INSERT statements) with Sri Lankan theme (tea/coffee items).
+
+- A short list of useful example queries (e.g., get menu by category, create order).
+
+8. REST API specification (Express/Node):
+
+- Endpoints, methods, request/response JSON examples for all frontend needs (products, categories, cart/orders, locations, contact messages, admin endpoints).
+
+9. Example backend code snippets:
+
+- Node/Express app skeleton with mysql2 (or an ORM option like Sequelize/Knex/Prisma) showing DB connection and one full CRUD example (e.g., GET /api/products, POST /api/orders).
+
+- Example SQL parameterized queries or ORM model.
+
+10. Frontend React scaffolding:
+
+- Vite (or CRA) + React 18 recommendation and commands to create app.
+
+- Routing with react-router example.
+
+- State management approach (Context + useReducer or Redux) and a CartContext example.
+
+- Example React components: Header (nav + cart badge), Hero, ProductCard, Menu page (filters), Cart drawer, Checkout form, Footer.
+
+- Sample code for one or two components showing structure, props, fetch to API, and styling approach (Tailwind CSS OR styled-components — choose one and be consistent).
+
+11. Styling and images:
+
+- Exact Tailwind config (if using Tailwind) or styled-components theme.
+
+- List of recommended online image sources and example Unsplash queries/URLs for Sri Lankan coffee/tea vibe.
+
+- Guidance on responsive breakpoints and small UI interaction/animation suggestions.
+
+12. Admin features (optional but described):
+
+- Admin dashboard endpoints and UI features: manage products, view orders, update order status, view analytics.
+
+13. Security, performance & accessibility notes:
+
+- CORS, input validation, prepared statements, rate limiting, basic auth for admin, image optimization, lazy loading, SEO meta tags.
+
+14. Deployment steps:
+
+- Frontend (Vercel/Netlify) and backend + MySQL hosting options (Railway, Render, Docker Compose + VPS).
+
+- Example Docker Compose file (frontend, backend, mysql) or hosting instructions.
+
+- Steps to run migrations and seed the DB from SQL files.
+
+15. Testing and CI suggestions:
+
+- Basic unit testing tools and example tests for one component or API route.
+
+16. Final checklist of files & artifacts you will deliver (SQL files, seed scripts, backend code, frontend code, image list, README).
+
+17. Clarifying questions I should answer before you start producing full code (e.g., payment provider, admin user auth, multi-language, store locations, inventory tracking).
+
+Extra instructions for your responses
+
+- Use concise, numbered lists and clear headings for each deliverable above.
+
+- Provide code and SQL in ready-to-run blocks with minimal placeholder values and clear instructions where to insert environment variables (DB credentials, JWT secret, API keys).
+
+- When giving example images, include direct URLs to images that can be used during development (Unsplash links).
+
+- Provide one ready-to-run example: a minimal end-to-end flow that includes:
+
+- SQL to create products + one sample order.
+
+- Backend endpoint GET /api/products and POST /api/orders.
+
+- Frontend Menu page fetching /api/products and adding to cart + Checkout posting to /api/orders.
+
+- Show commands to start backend and frontend locally.
+
+- At the end, list 5 prioritized next tasks (what to implement first, second, third).
+
+Constraints / Style
+
+- UI must be modern, minimal, elegant, and trend‑forward for customers.
+
+- Use Sri Lankan cultural cues subtly in imagery and sample product names (e.g., Ceylon Black, Spiced Ceylon Tea, Kithul Coffee blend) but not heavy or stereotypical design.
+
+- Keep UX simple: clear ordering flow, visible call-to-action, prominent hero, accessible forms.
+
+- Use English for all code comments and sample text.
+
+Output format
+
+- Present everything in a clean, developer-friendly format (headings, bullet points, and code blocks).
+
+- Prioritize clarity so a mid-level developer can follow the plan and get a working prototype with minimal questions.
+
+Now generate the full prompt and required structure that I can copy/paste into an AI assistant to produce the full project materials.
