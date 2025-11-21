@@ -24,7 +24,7 @@ import { eq, and, like, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export interface IStorage {
-  // User operations (required for Replit Auth)
+  // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
 
