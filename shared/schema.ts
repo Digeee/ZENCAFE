@@ -18,10 +18,10 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // ============================================================================
-// AUTH TABLES (Required by Replit Auth blueprint - DO NOT MODIFY)
+// AUTH TABLES
 // ============================================================================
 
-// Session storage table for Replit Auth
+// Session storage table
 export const sessions = mysqlTable(
   "sessions",
   {
@@ -32,7 +32,7 @@ export const sessions = mysqlTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User table for Replit Auth
+// User table
 export const users = mysqlTable("users", {
   id: varchar("id", { length: 255 }).primaryKey(),
   email: varchar("email", { length: 255 }).unique(),
