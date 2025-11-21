@@ -240,8 +240,12 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
 // Middleware to check if user is admin
 export const isAdmin: RequestHandler = async (req, res, next) => {
-  // In development, allow all requests to admin routes
+  // In development, allow all requests to admin routes and grant admin access
   if (process.env.NODE_ENV === 'development') {
+    // Add admin property to user in development mode
+    if (req.user) {
+      (req.user as any).isAdmin = true;
+    }
     return next();
   }
   

@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import dotenv from "dotenv";
 import path from "path";
 import { createServer } from "http";
+import { setupAuth } from "./replitAuth";
 
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -53,6 +54,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Set up authentication
+  await setupAuth(app);
+  
   await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
