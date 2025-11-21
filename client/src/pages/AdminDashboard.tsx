@@ -1,9 +1,9 @@
 // Admin dashboard with product/order management
 import { useEffect, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import type { Product, Order, ContactMessage, Category } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -17,10 +17,25 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, ShoppingBag, MessageSquare, Plus, Pencil, Trash2 } from "lucide-react";
+import { 
+  Package, 
+  ShoppingBag, 
+  MessageSquare, 
+  Plus, 
+  Pencil, 
+  Trash2, 
+  Eye, 
+  Users, 
+  BarChart3,
+  Filter,
+  Search
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const productFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -39,8 +54,12 @@ type ProductFormData = z.infer<typeof productFormSchema>;
 export default function AdminDashboard() {
   const { isAdmin, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isAdmin)) {
@@ -55,23 +74,43 @@ export default function AdminDashboard() {
     }
   }, [isAuthenticated, isAdmin, authLoading, toast]);
 
-  const { data: products = [] } = useQuery<Product[]>({
+  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/admin/products"],
     enabled: isAdmin,
   });
 
-  const { data: orders = [] } = useQuery<Order[]>({
+  const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/admin/orders"],
     enabled: isAdmin,
   });
 
-  const { data: messages = [] } = useQuery<ContactMessage[]>({
+  const { data: messages = [], isLoading: messagesLoading } = useQuery<ContactMessage[]>({
     queryKey: ["/api/admin/messages"],
     enabled: isAdmin,
   });
 
-  const { data: categories = [] } = useQuery<Category[]>({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
+  });
+
+  // Filter products based on search term and category
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          product.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === "all" || product.categoryId === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Filter orders based on status
+  const filteredOrders = orders.filter(order => {
+    return orderStatusFilter === "all" || order.status === orderStatusFilter;
+  });
+
+  // Filter messages based on search term
+  const filteredMessages = messages.filter(message => {
+    return message.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           message.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           message.message.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   const productForm = useForm<ProductFormData>({
@@ -185,6 +224,28 @@ export default function AdminDashboard() {
     },
   });
 
+  const updateMessageStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      return await apiRequest("PATCH", `/api/admin/messages/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/messages"] });
+      toast({ title: "Message status updated" });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => window.location.href = "/api/login", 500);
+        return;
+      }
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     productForm.reset({
@@ -209,6 +270,32 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteProduct = (id: string) => {
+    if (confirm("Are you sure you want to delete this product? This action cannot be undone.")) {
+      deleteProductMutation.mutate(id);
+    }
+  };
+
+  const handleUpdateOrderStatus = (orderId: string, status: string) => {
+    updateOrderStatusMutation.mutate({ id: orderId, status });
+  };
+
+  const handleUpdateMessageStatus = (messageId: string, status: string) => {
+    updateMessageStatusMutation.mutate({ id: messageId, status });
+  };
+
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" => {
+    if (status === "completed") return "default";
+    if (status === "processing") return "secondary";
+    return "destructive";
+  };
+
+  const getMessageStatusVariant = (status: string): "default" | "secondary" | "destructive" => {
+    if (status === "replied") return "default";
+    if (status === "read") return "secondary";
+    return "destructive";
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen py-12 px-4 flex items-center justify-center">
@@ -222,349 +309,601 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen py-12 px-4">
+    <div className="min-h-screen py-8 px-4 bg-gradient-to-br from-background to-muted">
       <div className="container mx-auto max-w-7xl">
         <div className="space-y-8">
-          <div>
-            <h1 className="font-serif text-4xl md:text-5xl font-medium" data-testid="admin-title">
-              Admin Dashboard
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Manage products, orders, and messages
-            </p>
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="font-serif text-4xl md:text-5xl font-medium" data-testid="admin-title">
+                Admin Dashboard
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Manage your ZEN CAFE products, orders, and customer messages
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <Avatar className="h-12 w-12">
+                <AvatarFallback>
+                  <Users className="h-6 w-6" />
+                </AvatarFallback>
+              </Avatar>
+            </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="hover-elevate border-0 shadow-lg transition-all duration-300 bg-card">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
+                <Package className="h-5 w-5 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-products">{products.length}</div>
+                <div className="text-2xl font-bold" data-testid="stat-products">
+                  {productsLoading ? <Skeleton className="h-8 w-12" /> : products.length}
+                </div>
+                <p className="text-xs text-muted-foreground">Active products</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="hover-elevate border-0 shadow-lg transition-all duration-300 bg-card">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                <ShoppingBag className="h-5 w-5 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-orders">{orders.length}</div>
+                <div className="text-2xl font-bold" data-testid="stat-orders">
+                  {ordersLoading ? <Skeleton className="h-8 w-12" /> : orders.length}
+                </div>
+                <p className="text-xs text-muted-foreground">All time orders</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="hover-elevate border-0 shadow-lg transition-all duration-300 bg-card">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">New Messages</CardTitle>
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                <MessageSquare className="h-5 w-5 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold" data-testid="stat-messages">
-                  {messages.filter(m => m.status === "new").length}
+                  {messagesLoading ? (
+                    <Skeleton className="h-8 w-12" />
+                  ) : (
+                    messages.filter(m => m.status === "new").length
+                  )}
                 </div>
+                <p className="text-xs text-muted-foreground">Pending responses</p>
+              </CardContent>
+            </Card>
+            <Card className="hover-elevate border-0 shadow-lg transition-all duration-300 bg-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <BarChart3 className="h-5 w-5 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {ordersLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    `LKR ${orders.reduce((sum, order) => sum + parseFloat(order.totalAmount), 0).toFixed(2)}`
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">Lifetime sales</p>
               </CardContent>
             </Card>
           </div>
 
           {/* Tabs */}
           <Tabs defaultValue="products" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="products" data-testid="tab-products">Products</TabsTrigger>
-              <TabsTrigger value="orders" data-testid="tab-orders">Orders</TabsTrigger>
-              <TabsTrigger value="messages" data-testid="tab-messages">Messages</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 lg:w-[400px] bg-muted">
+              <TabsTrigger value="products" data-testid="tab-products" className="gap-2 data-[state=active]:bg-background data-[state=active]:text-foreground">
+                <Package className="h-4 w-4" />
+                Products
+              </TabsTrigger>
+              <TabsTrigger value="orders" data-testid="tab-orders" className="gap-2 data-[state=active]:bg-background data-[state=active]:text-foreground">
+                <ShoppingBag className="h-4 w-4" />
+                Orders
+              </TabsTrigger>
+              <TabsTrigger value="messages" data-testid="tab-messages" className="gap-2 data-[state=active]:bg-background data-[state=active]:text-foreground">
+                <MessageSquare className="h-4 w-4" />
+                Messages
+              </TabsTrigger>
             </TabsList>
 
             {/* Products Tab */}
-            <TabsContent value="products" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="font-serif text-2xl font-medium">Product Management</h2>
-                <Dialog open={isProductDialogOpen} onOpenChange={(open) => {
-                  setIsProductDialogOpen(open);
-                  if (!open) {
-                    setEditingProduct(null);
-                    productForm.reset();
-                  }
-                }}>
-                  <DialogTrigger asChild>
-                    <Button className="gap-2" data-testid="button-add-product">
-                      <Plus className="h-4 w-4" />
-                      Add Product
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
-                    </DialogHeader>
-                    <Form {...productForm}>
-                      <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
-                        <FormField
-                          control={productForm.control}
-                          name="name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Product Name</FormLabel>
-                              <FormControl>
-                                <Input {...field} data-testid="input-product-name" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={productForm.control}
-                          name="categoryId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Category</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger data-testid="select-category">
-                                    <SelectValue placeholder="Select category" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {categories.map(cat => (
-                                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={productForm.control}
-                          name="description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Description</FormLabel>
-                              <FormControl>
-                                <Textarea {...field} rows={3} data-testid="input-product-description" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="grid grid-cols-2 gap-4">
+            <TabsContent value="products" className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h2 className="font-serif text-2xl font-medium">Product Management</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Manage your coffee, tea, and pastry products
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search products..."
+                      className="pl-10 w-full sm:w-64"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger className="w-full sm:w-40">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Dialog open={isProductDialogOpen} onOpenChange={(open) => {
+                    setIsProductDialogOpen(open);
+                    if (!open) {
+                      setEditingProduct(null);
+                      productForm.reset();
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90" data-testid="button-add-product">
+                        <Plus className="h-4 w-4" />
+                        Add Product
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
+                      </DialogHeader>
+                      <Form {...productForm}>
+                        <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
                           <FormField
                             control={productForm.control}
-                            name="price"
+                            name="name"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Price</FormLabel>
+                                <FormLabel>Product Name</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="9.99" data-testid="input-product-price" />
+                                  <Input {...field} data-testid="input-product-name" placeholder="Ceylon Black Tea" className="border-muted-foreground/20" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={productForm.control}
+                              name="categoryId"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Category</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger data-testid="select-category" className="border-muted-foreground/20">
+                                        <SelectValue placeholder="Select category" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {categories.map(cat => (
+                                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={productForm.control}
+                              name="price"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Price (LKR)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="12.99" data-testid="input-product-price" className="border-muted-foreground/20" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
                           <FormField
                             control={productForm.control}
-                            name="origin"
+                            name="description"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Origin (Optional)</FormLabel>
+                                <FormLabel>Description</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="Kandy, Sri Lanka" data-testid="input-product-origin" />
+                                  <Textarea {...field} rows={3} data-testid="input-product-description" placeholder="Premium black tea from the highlands of Nuwara Eliya..." className="border-muted-foreground/20" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                        </div>
-                        <FormField
-                          control={productForm.control}
-                          name="imageUrl"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Image URL</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="https://..." data-testid="input-product-image" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={productForm.control}
-                          name="brewingSuggestions"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Brewing Suggestions (Optional)</FormLabel>
-                              <FormControl>
-                                <Textarea {...field} rows={2} data-testid="input-product-brewing" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={productForm.control}
+                              name="origin"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Origin (Optional)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="Nuwara Eliya, Sri Lanka" data-testid="input-product-origin" className="border-muted-foreground/20" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={productForm.control}
+                              name="imageUrl"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Image URL</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="https://..." data-testid="input-product-image" className="border-muted-foreground/20" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
                           <FormField
                             control={productForm.control}
-                            name="inStock"
+                            name="brewingSuggestions"
                             render={({ field }) => (
-                              <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                  <FormLabel className="text-base">In Stock</FormLabel>
-                                </div>
+                              <FormItem>
+                                <FormLabel>Brewing Suggestions (Optional)</FormLabel>
                                 <FormControl>
-                                  <Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-in-stock" />
+                                  <Textarea {...field} rows={2} data-testid="input-product-brewing" placeholder="Steep 1 teaspoon per cup in freshly boiled water for 3-5 minutes..." className="border-muted-foreground/20" />
                                 </FormControl>
+                                <FormMessage />
                               </FormItem>
                             )}
                           />
-                          <FormField
-                            control={productForm.control}
-                            name="featured"
-                            render={({ field }) => (
-                              <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                  <FormLabel className="text-base">Featured</FormLabel>
-                                </div>
-                                <FormControl>
-                                  <Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-featured" />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        <Button type="submit" className="w-full" disabled={createProductMutation.isPending || updateProductMutation.isPending} data-testid="button-save-product">
-                          {editingProduct ? "Update Product" : "Create Product"}
-                        </Button>
-                      </form>
-                    </Form>
-                  </DialogContent>
-                </Dialog>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={productForm.control}
+                              name="inStock"
+                              render={({ field }) => (
+                                <FormItem className="flex items-center justify-between rounded-lg border p-4 border-muted-foreground/20">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-base">In Stock</FormLabel>
+                                    <p className="text-sm text-muted-foreground">Product is available for purchase</p>
+                                  </div>
+                                  <FormControl>
+                                    <Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-in-stock" />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={productForm.control}
+                              name="featured"
+                              render={({ field }) => (
+                                <FormItem className="flex items-center justify-between rounded-lg border p-4 border-muted-foreground/20">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-base">Featured</FormLabel>
+                                    <p className="text-sm text-muted-foreground">Display on homepage</p>
+                                  </div>
+                                  <FormControl>
+                                    <Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-featured" />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <Button 
+                            type="submit" 
+                            className="w-full" 
+                            disabled={createProductMutation.isPending || updateProductMutation.isPending}
+                            data-testid="button-save-product"
+                          >
+                            {editingProduct ? "Update Product" : "Create Product"}
+                          </Button>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
 
-              <Card>
+              <Card className="border-0 shadow-lg">
                 <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Stock</TableHead>
-                        <TableHead>Featured</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {products.map((product) => (
-                        <TableRow key={product.id} data-testid={`product-row-${product.id}`}>
-                          <TableCell className="font-medium">{product.name}</TableCell>
-                          <TableCell>{categories.find(c => c.id === product.categoryId)?.name}</TableCell>
-                          <TableCell>${product.price}</TableCell>
-                          <TableCell>
-                            <Badge variant={product.inStock ? "default" : "secondary"}>
-                              {product.inStock ? "In Stock" : "Out"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {product.featured && <Badge>Featured</Badge>}
-                          </TableCell>
-                          <TableCell className="text-right space-x-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleEditProduct(product)} data-testid={`button-edit-${product.id}`}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => {
-                              if (confirm("Are you sure you want to delete this product?")) {
-                                deleteProductMutation.mutate(product.id);
-                              }
-                            }} data-testid={`button-delete-${product.id}`}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                  {productsLoading ? (
+                    <div className="p-6 space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-16 w-full" />
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted hover:bg-muted">
+                          <TableHead>Product</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead>Stock</TableHead>
+                          <TableHead>Featured</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredProducts.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center py-8">
+                              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                              <p className="text-muted-foreground">No products found</p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {searchTerm || categoryFilter !== "all" 
+                                  ? "Try adjusting your search or filter" 
+                                  : "Add your first product to get started"}
+                              </p>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredProducts.map((product) => (
+                            <TableRow key={product.id} data-testid={`product-row-${product.id}`} className="hover:bg-muted/50">
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 rounded-md overflow-hidden bg-muted">
+                                    {product.imageUrl ? (
+                                      <img 
+                                        src={product.imageUrl} 
+                                        alt={product.name} 
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.src = "/api/placeholder/100/100";
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="h-full w-full flex items-center justify-center">
+                                        <Package className="h-5 w-5 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div>{product.name}</div>
+                                    <div className="text-xs text-muted-foreground line-clamp-1">
+                                      {product.description.substring(0, 40)}...
+                                    </div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary">
+                                  {categories.find(c => c.id === product.categoryId)?.name || "Unknown"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-medium">LKR {product.price}</TableCell>
+                              <TableCell>
+                                <Badge variant={product.inStock ? "default" : "secondary"}>
+                                  {product.inStock ? "In Stock" : "Out"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {product.featured && <Badge>Featured</Badge>}
+                              </TableCell>
+                              <TableCell className="text-right space-x-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => handleEditProduct(product)} 
+                                  data-testid={`button-edit-${product.id}`}
+                                  className="hover:bg-primary/10"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => handleDeleteProduct(product.id)} 
+                                  data-testid={`button-delete-${product.id}`}
+                                  className="hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
             {/* Orders Tab */}
-            <TabsContent value="orders" className="space-y-4">
-              <h2 className="font-serif text-2xl font-medium">Order Management</h2>
-              <Card>
+            <TabsContent value="orders" className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h2 className="font-serif text-2xl font-medium">Order Management</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Track and manage customer orders
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+                    <SelectTrigger className="w-40">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Orders</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Card className="border-0 shadow-lg">
                 <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Order ID</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {orders.map((order) => (
-                        <TableRow key={order.id} data-testid={`order-row-${order.id}`}>
-                          <TableCell className="font-medium">#{order.id.substring(0, 8)}</TableCell>
-                          <TableCell>{order.customerName}</TableCell>
-                          <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-                          <TableCell>${order.totalAmount}</TableCell>
-                          <TableCell>
-                            <Select
-                              value={order.status}
-                              onValueChange={(status) => updateOrderStatusMutation.mutate({ id: order.id, status })}
-                            >
-                              <SelectTrigger className="w-32" data-testid={`select-status-${order.id}`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="processing">Processing</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="outline" size="sm" data-testid={`button-view-order-${order.id}`}>
-                              View Details
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                  {ordersLoading ? (
+                    <div className="p-6 space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-16 w-full" />
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted hover:bg-muted">
+                          <TableHead>Order ID</TableHead>
+                          <TableHead>Customer</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Total</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredOrders.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center py-8">
+                              <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                              <p className="text-muted-foreground">No orders found</p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {orderStatusFilter !== "all" 
+                                  ? "Try adjusting your filter" 
+                                  : "Orders will appear here when customers place them"}
+                              </p>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredOrders.map((order) => (
+                            <TableRow key={order.id} data-testid={`order-row-${order.id}`} className="hover:bg-muted/50">
+                              <TableCell className="font-medium">#{order.id.substring(0, 8)}</TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">{order.customerName}</div>
+                                  <div className="text-sm text-muted-foreground">{order.customerEmail}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  {new Date(order.createdAt).toLocaleDateString()}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium">LKR {order.totalAmount}</TableCell>
+                              <TableCell>
+                                <Select
+                                  value={order.status}
+                                  onValueChange={(status) => handleUpdateOrderStatus(order.id, status)}
+                                >
+                                  <SelectTrigger className="w-32" data-testid={`select-status-${order.id}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="processing">Processing</SelectItem>
+                                    <SelectItem value="completed">Completed</SelectItem>
+                                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button variant="outline" size="sm" className="gap-1" data-testid={`button-view-order-${order.id}`}>
+                                  <Eye className="h-4 w-4" />
+                                  View
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
             {/* Messages Tab */}
-            <TabsContent value="messages" className="space-y-4">
-              <h2 className="font-serif text-2xl font-medium">Contact Messages</h2>
+            <TabsContent value="messages" className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h2 className="font-serif text-2xl font-medium">Customer Messages</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Manage inquiries from your customers
+                  </p>
+                </div>
+                <div className="relative w-full md:w-64">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search messages..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+
               <div className="space-y-4">
-                {messages.map((message) => (
-                  <Card key={message.id} data-testid={`message-${message.id}`}>
-                    <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg">{message.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {message.email} {message.phone && `• ${message.phone}`}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={message.status === "new" ? "default" : "secondary"}>
-                          {message.status}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(message.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">{message.message}</p>
-                    </CardContent>
+                {messagesLoading ? (
+                  [1, 2, 3].map((i) => (
+                    <Card key={i} className="p-4">
+                      <Skeleton className="h-20 w-full" />
+                    </Card>
+                  ))
+                ) : filteredMessages.length === 0 ? (
+                  <Card className="text-center py-12">
+                    <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground">No messages found</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {searchTerm 
+                        ? "Try adjusting your search" 
+                        : "Messages from your contact form will appear here"}
+                    </p>
                   </Card>
-                ))}
+                ) : (
+                  filteredMessages.map((message) => (
+                    <Card key={message.id} data-testid={`message-${message.id}`} className="hover-elevate border-0 shadow-sm transition-all duration-300">
+                      <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4">
+                        <div className="space-y-1">
+                          <CardTitle className="text-lg">{message.name}</CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {message.email} {message.phone && `• ${message.phone}`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={getMessageStatusVariant(message.status)}>
+                            {message.status}
+                          </Badge>
+                          <p className="text-xs text-muted-foreground whitespace-nowrap">
+                            {new Date(message.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </CardHeader>
+                      <Separator className="my-0" />
+                      <CardContent className="p-4">
+                        <p className="text-sm text-muted-foreground">{message.message}</p>
+                        <div className="flex justify-end mt-4 gap-2">
+                          <Select
+                            value={message.status}
+                            onValueChange={(status) => handleUpdateMessageStatus(message.id, status)}
+                          >
+                            <SelectTrigger className="w-32 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="new">New</SelectItem>
+                              <SelectItem value="read">Read</SelectItem>
+                              <SelectItem value="replied">Replied</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             </TabsContent>
           </Tabs>

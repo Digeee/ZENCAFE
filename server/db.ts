@@ -1,16 +1,26 @@
-// PostgreSQL database connection following database blueprint
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+// MySQL database connection
+import { createConnection } from 'mysql2/promise';
+import { drizzle } from 'drizzle-orm/mysql2';
 import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
+// MySQL connection configuration
+const mysqlConfig = {
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '3306'),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'zencafe',
+};
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+console.log('Connecting to MySQL database:', mysqlConfig.host, mysqlConfig.database);
+
+let connection;
+try {
+  connection = await createConnection(mysqlConfig);
+  console.log('MySQL connection established successfully');
+} catch (error) {
+  console.error('Failed to connect to MySQL database:', error.message);
+  throw error;
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+export const db = drizzle(connection, { schema, mode: 'default' });

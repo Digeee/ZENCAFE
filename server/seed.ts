@@ -1,6 +1,6 @@
 // Database seed script with Sri Lankan products
 import { db } from "./db";
-import { categories, products, users } from "@shared/schema";
+import { categories, products } from "@shared/schema";
 
 // Image URLs - using generated image paths
 const ceylonBlackTeaImage = "/attached_assets/generated_images/ceylon_black_tea_product.png";
@@ -14,49 +14,51 @@ async function seed() {
   // Create categories
   console.log("📁 Creating categories...");
   
-  const [coffeeCategory] = await db
+  await db
     .insert(categories)
     .values({
+      id: "coffee_cat",
       name: "Coffee",
       slug: "coffee",
       description: "Premium Ceylon coffee blends sourced from Sri Lanka's finest estates",
       imageUrl: "/api/placeholder/coffee-category",
       displayOrder: 1,
     })
-    .onConflictDoNothing()
-    .returning();
+    .onDuplicateKeyUpdate({ set: { name: "Coffee" } })
+    .execute();
 
-  const [teaCategory] = await db
+  await db
     .insert(categories)
     .values({
+      id: "tea_cat",
       name: "Tea",
       slug: "tea",
       description: "Authentic Ceylon tea from the misty highlands of Sri Lanka",
       imageUrl: "/api/placeholder/tea-category",
       displayOrder: 2,
     })
-    .onConflictDoNothing()
-    .returning();
+    .onDuplicateKeyUpdate({ set: { name: "Tea" } })
+    .execute();
 
-  const [pastriesCategory] = await db
+  await db
     .insert(categories)
     .values({
+      id: "pastries_cat",
       name: "Pastries",
       slug: "pastries",
       description: "Traditional Sri Lankan pastries and baked goods",
       imageUrl: "/api/placeholder/pastries-category",
       displayOrder: 3,
     })
-    .onConflictDoNothing()
-    .returning();
+    .onDuplicateKeyUpdate({ set: { name: "Pastries" } })
+    .execute();
 
   console.log("✅ Categories created");
 
-  // Get category IDs (in case they already existed)
-  const allCategories = await db.select().from(categories);
-  const coffee = allCategories.find(c => c.slug === "coffee")!;
-  const tea = allCategories.find(c => c.slug === "tea")!;
-  const pastries = allCategories.find(c => c.slug === "pastries")!;
+  // Category IDs
+  const coffeeId = "coffee_cat";
+  const teaId = "tea_cat";
+  const pastriesId = "pastries_cat";
 
   // Create products
   console.log("☕ Creating products...");
@@ -64,7 +66,8 @@ async function seed() {
   const productsData = [
     // Ceylon Tea Products
     {
-      categoryId: tea.id,
+      id: "ceylon_black_tea",
+      categoryId: teaId,
       name: "Ceylon Black Tea",
       slug: "ceylon-black-tea",
       description: "Premium black tea from the highlands of Nuwara Eliya. Rich, full-bodied flavor with hints of citrus and a smooth finish. Perfect for morning tea or afternoon refreshment.",
@@ -76,7 +79,8 @@ async function seed() {
       featured: true,
     },
     {
-      categoryId: tea.id,
+      id: "spiced_ceylon_tea",
+      categoryId: teaId,
       name: "Spiced Ceylon Tea",
       slug: "spiced-ceylon-tea",
       description: "An aromatic blend of premium Ceylon black tea infused with traditional spices including cinnamon, cardamom, and clove. Warming and invigorating.",
@@ -88,7 +92,8 @@ async function seed() {
       featured: true,
     },
     {
-      categoryId: tea.id,
+      id: "silver_tips_white_tea",
+      categoryId: teaId,
       name: "Silver Tips White Tea",
       slug: "silver-tips-white-tea",
       description: "Rare and exquisite white tea made from hand-picked silver tips. Delicate floral notes with natural sweetness. One of the world's finest teas.",
@@ -100,7 +105,8 @@ async function seed() {
       featured: false,
     },
     {
-      categoryId: tea.id,
+      id: "ceylon_green_tea",
+      categoryId: teaId,
       name: "Ceylon Green Tea",
       slug: "ceylon-green-tea",
       description: "Light and refreshing green tea with grassy notes and a clean finish. Rich in antioxidants and perfect for daily wellness.",
@@ -114,7 +120,8 @@ async function seed() {
 
     // Coffee Products
     {
-      categoryId: coffee.id,
+      id: "kithul_coffee_blend",
+      categoryId: coffeeId,
       name: "Kithul Coffee Blend",
       slug: "kithul-coffee-blend",
       description: "Unique artisanal coffee sweetened naturally with kithul palm treacle. Smooth, rich flavor with caramel undertones. A Sri Lankan specialty.",
@@ -126,7 +133,8 @@ async function seed() {
       featured: true,
     },
     {
-      categoryId: coffee.id,
+      id: "ceylon_cinnamon_coffee",
+      categoryId: coffeeId,
       name: "Ceylon Cinnamon Coffee",
       slug: "ceylon-cinnamon-coffee",
       description: "Premium Arabica coffee infused with authentic Ceylon cinnamon. Warm, spicy notes complement the coffee's natural richness perfectly.",
@@ -138,7 +146,8 @@ async function seed() {
       featured: true,
     },
     {
-      categoryId: coffee.id,
+      id: "single_origin_arabica",
+      categoryId: coffeeId,
       name: "Single Origin Arabica",
       slug: "single-origin-arabica",
       description: "Pure Ceylon Arabica coffee from high-altitude estates. Complex flavor profile with notes of chocolate and berries. Medium roast.",
@@ -150,7 +159,8 @@ async function seed() {
       featured: false,
     },
     {
-      categoryId: coffee.id,
+      id: "robusta_dark_roast",
+      categoryId: coffeeId,
       name: "Robusta Dark Roast",
       slug: "robusta-dark-roast",
       description: "Bold Ceylon Robusta coffee with deep, intense flavor. Higher caffeine content and full body. Perfect for espresso.",
@@ -164,7 +174,8 @@ async function seed() {
 
     // Pastries
     {
-      categoryId: pastries.id,
+      id: "coconut_roti_pack",
+      categoryId: pastriesId,
       name: "Coconut Roti (6 pack)",
       slug: "coconut-roti-pack",
       description: "Traditional Sri Lankan coconut roti, freshly made. Flaky layers filled with sweetened coconut. A beloved breakfast treat.",
@@ -176,7 +187,8 @@ async function seed() {
       featured: false,
     },
     {
-      categoryId: pastries.id,
+      id: "kimbula_banis",
+      categoryId: pastriesId,
       name: "Kimbula Banis (Tiger Buns)",
       slug: "kimbula-banis",
       description: "Sweet buns with distinctive tiger-stripe pattern. Soft, slightly sweet bread perfect with tea or coffee.",
@@ -188,7 +200,8 @@ async function seed() {
       featured: false,
     },
     {
-      categoryId: pastries.id,
+      id: "bibikkan_cake",
+      categoryId: pastriesId,
       name: "Bibikkan (Coconut Cake)",
       slug: "bibikkan-cake",
       description: "Traditional Sri Lankan coconut cake made with jaggery, cashews, and aromatic spices. Dense, moist, and richly flavored.",
@@ -205,7 +218,8 @@ async function seed() {
     await db
       .insert(products)
       .values(productData)
-      .onConflictDoNothing();
+      .onDuplicateKeyUpdate({ set: { name: productData.name } })
+      .execute();
   }
 
   console.log("✅ Products created");
@@ -219,7 +233,7 @@ async function seed() {
 
   console.log("\n✨ Database seeding completed successfully!");
   console.log("📊 Summary:");
-  console.log(`   - Categories: ${allCategories.length}`);
+  console.log(`   - Categories: 3`);
   console.log(`   - Products: ${productsData.length}`);
 }
 

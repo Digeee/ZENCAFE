@@ -16,6 +16,7 @@ import ProductDetail from "@/pages/ProductDetail";
 import Checkout from "@/pages/Checkout";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
+import EnhancedAdminDashboard from "@/pages/EnhancedAdminDashboard";
 import Contact from "@/pages/Contact";
 import About from "@/pages/About";
 import NotFound from "@/pages/not-found";
@@ -34,7 +35,7 @@ function Router() {
           <Route path="/about" component={About} />
           <Route path="/checkout" component={Checkout} />
           <Route path="/dashboard" component={CustomerDashboard} />
-          <Route path="/admin" component={AdminDashboard} />
+          <Route path="/admin" component={EnhancedAdminDashboard} />
           <Route component={NotFound} />
         </>
       ) : (
@@ -44,7 +45,7 @@ function Router() {
           <Route path="/product/:slug" component={ProductDetail} />
           <Route path="/checkout" component={Checkout} />
           <Route path="/dashboard" component={CustomerDashboard} />
-          <Route path="/admin" component={AdminDashboard} />
+          <Route path="/admin" component={EnhancedAdminDashboard} />
           <Route path="/contact" component={Contact} />
           <Route path="/about" component={About} />
           <Route component={NotFound} />

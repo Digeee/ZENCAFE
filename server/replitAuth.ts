@@ -1,4 +1,5 @@
 // Replit Auth implementation following auth blueprint
+// Modified for local development
 import * as client from "openid-client";
 import { Strategy, type VerifyFunction } from "openid-client/passport";
 
@@ -8,9 +9,23 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
+import memorystore from "memorystore";
+
+// Use memory store for development
+const MemoryStore = memorystore(session);
 
 const getOidcConfig = memoize(
   async () => {
+    // In development, return a mock config
+    if (process.env.NODE_ENV === 'development') {
+      return {
+        issuer: 'https://replit.com/oidc',
+        // Mock functions
+        userinfo: () => Promise.resolve({}),
+        refresh: () => Promise.resolve({}),
+      };
+    }
+    
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
       process.env.REPL_ID!
@@ -20,6 +35,23 @@ const getOidcConfig = memoize(
 );
 
 export function getSession() {
+  // In development, use memory store
+  if (process.env.NODE_ENV === 'development') {
+    return session({
+      secret: process.env.SESSION_SECRET || 'local-dev-secret',
+      resave: false,
+      saveUninitialized: false,
+      store: new MemoryStore({
+        checkPeriod: 86400000 // prune expired entries every 24h
+      }),
+      cookie: {
+        httpOnly: true,
+        secure: false, // false for development
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+      },
+    });
+  }
+  
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
@@ -45,15 +77,21 @@ function updateUserSession(
   user: any,
   tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
 ) {
-  user.claims = tokens.claims();
-  user.access_token = tokens.access_token;
-  user.refresh_token = tokens.refresh_token;
-  user.expires_at = user.claims?.exp;
+  user.claims = tokens?.claims ? tokens.claims() : { sub: 'local-dev-user' };
+  user.access_token = tokens?.access_token || 'local-dev-token';
+  user.refresh_token = tokens?.refresh_token || 'local-dev-refresh';
+  user.expires_at = user.claims?.exp || Math.floor(Date.now() / 1000) + 3600;
 }
 
 async function upsertUser(
   claims: any,
 ) {
+  // In development, skip database operations if not available
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Skipping user upsert in development');
+    return;
+  }
+  
   await storage.upsertUser({
     id: claims["sub"],
     email: claims["email"],
@@ -68,6 +106,39 @@ export async function setupAuth(app: Express) {
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // In development, skip OIDC setup
+  if (process.env.NODE_ENV === 'development') {
+    // Setup a simple local strategy for development
+    passport.serializeUser((user: Express.User, cb) => cb(null, user));
+    passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+    
+    // Add a simple login route for development
+    app.get("/api/login", (req, res) => {
+      // Create a mock user for development
+      const mockUser = {
+        claims: { sub: 'local-dev-user', email: 'dev@example.com', first_name: 'Dev', last_name: 'User' },
+        access_token: 'local-dev-token',
+        refresh_token: 'local-dev-refresh',
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+      };
+      
+      req.login(mockUser, (err) => {
+        if (err) {
+          return res.status(500).json({ message: 'Login failed' });
+        }
+        res.redirect('/');
+      });
+    });
+    
+    app.get("/api/logout", (req, res) => {
+      req.logout(() => {
+        res.redirect('/');
+      });
+    });
+    
+    return;
+  }
 
   const config = await getOidcConfig();
 
@@ -134,6 +205,11 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // In development, allow all requests
+  if (process.env.NODE_ENV === 'development') {
+    return next();
+  }
+  
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
@@ -164,6 +240,11 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
 // Middleware to check if user is admin
 export const isAdmin: RequestHandler = async (req, res, next) => {
+  // In development, allow all requests to admin routes
+  if (process.env.NODE_ENV === 'development') {
+    return next();
+  }
+  
   const user = req.user as any;
   if (!user?.claims?.sub) {
     return res.status(401).json({ message: "Unauthorized" });

@@ -1,18 +1,19 @@
 // Database schema for ZEN CAFE - Sri Lankan Coffee & Tea Shop
-// Follows Replit Auth blueprint and PostgreSQL database blueprint
+// Modified for MySQL database
 
 import { sql, relations } from 'drizzle-orm';
 import {
   index,
-  jsonb,
-  pgTable,
+  json,
+  mysqlTable,
   timestamp,
   varchar,
   text,
-  integer,
+  int,
   decimal,
   boolean,
-} from "drizzle-orm/pg-core";
+  mysqlEnum,
+} from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -21,23 +22,23 @@ import { z } from "zod";
 // ============================================================================
 
 // Session storage table for Replit Auth
-export const sessions = pgTable(
+export const sessions = mysqlTable(
   "sessions",
   {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
+    sid: varchar("sid", { length: 255 }).primaryKey(),
+    sess: json("sess").notNull(),
     expire: timestamp("expire").notNull(),
   },
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
 // User table for Replit Auth
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
+export const users = mysqlTable("users", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  email: varchar("email", { length: 255 }).unique(),
+  firstName: varchar("first_name", { length: 255 }),
+  lastName: varchar("last_name", { length: 255 }),
+  profileImageUrl: varchar("profile_image_url", { length: 255 }),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -51,13 +52,13 @@ export type User = typeof users.$inferSelect;
 // ============================================================================
 
 // Categories table (Coffee, Tea, Pastries)
-export const categories = pgTable("categories", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const categories = mysqlTable("categories", {
+  id: varchar("id", { length: 255 }).primaryKey(),
   name: varchar("name", { length: 100 }).notNull().unique(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
   description: text("description"),
   imageUrl: text("image_url"),
-  displayOrder: integer("display_order").default(0).notNull(),
+  displayOrder: int("display_order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -70,9 +71,9 @@ export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 
 // Products table
-export const products = pgTable("products", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  categoryId: varchar("category_id").notNull().references(() => categories.id, { onDelete: 'cascade' }),
+export const products = mysqlTable("products", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  categoryId: varchar("category_id", { length: 255 }).notNull(),
   name: varchar("name", { length: 200 }).notNull(),
   slug: varchar("slug", { length: 200 }).notNull().unique(),
   description: text("description").notNull(),
@@ -101,10 +102,10 @@ export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 
 // Orders table
-export const orders = pgTable("orders", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, processing, completed, cancelled
+export const orders = mysqlTable("orders", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["pending", "processing", "completed", "cancelled"]).notNull().default("pending"),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   customerName: varchar("customer_name", { length: 200 }).notNull(),
   customerEmail: varchar("customer_email", { length: 200 }).notNull(),
@@ -138,12 +139,12 @@ export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 
 // Order items table
-export const orderItems = pgTable("order_items", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  orderId: varchar("order_id").notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  productId: varchar("product_id").notNull().references(() => products.id, { onDelete: 'restrict' }),
+export const orderItems = mysqlTable("order_items", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  orderId: varchar("order_id", { length: 255 }).notNull(),
+  productId: varchar("product_id", { length: 255 }).notNull(),
   productName: varchar("product_name", { length: 200 }).notNull(), // Snapshot for history
-  quantity: integer("quantity").notNull(),
+  quantity: int("quantity").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(), // Price at time of order
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
@@ -155,13 +156,13 @@ export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = typeof orderItems.$inferInsert;
 
 // Contact messages table
-export const contactMessages = pgTable("contact_messages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const contactMessages = mysqlTable("contact_messages", {
+  id: varchar("id", { length: 255 }).primaryKey(),
   name: varchar("name", { length: 200 }).notNull(),
   email: varchar("email", { length: 200 }).notNull(),
   phone: varchar("phone", { length: 50 }),
   message: text("message").notNull(),
-  status: varchar("status", { length: 50 }).notNull().default("new"), // new, read, replied
+  status: mysqlEnum("status", ["new", "read", "replied"]).notNull().default("new"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_contact_messages_status").on(table.status),
