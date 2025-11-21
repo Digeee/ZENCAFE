@@ -4,7 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import dotenv from "dotenv";
 import path from "path";
 import { createServer } from "http";
-import { setupAuth } from "./replitAuth";
+import { setupAuth } from "./auth";
 
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
