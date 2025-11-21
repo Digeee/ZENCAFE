@@ -1,4 +1,4 @@
-// Auth utilities following Replit Auth blueprint
-export function isUnauthorizedError(error: Error): boolean {
-  return /^401: .*Unauthorized/.test(error.message);
+// Auth utilities
+export function isUnauthorizedError(error: any): boolean {
+  return error?.response?.status === 401 || error?.response?.status === 403;
 }

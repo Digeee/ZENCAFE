@@ -1,4 +1,4 @@
-// Replit Auth implementation following auth blueprint
+// Authentication implementation
 // Modified for local development
 import * as client from "openid-client";
 import { Strategy, type VerifyFunction } from "openid-client/passport";
@@ -19,7 +19,7 @@ const getOidcConfig = memoize(
     // In development, return a mock config
     if (process.env.NODE_ENV === 'development') {
       return {
-        issuer: 'https://replit.com/oidc',
+        issuer: 'https://auth.example.com/oidc',
         // Mock functions
         userinfo: () => Promise.resolve({}),
         refresh: () => Promise.resolve({}),
@@ -27,7 +27,7 @@ const getOidcConfig = memoize(
     }
     
     return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
+      new URL(process.env.ISSUER_URL ?? "https://auth.example.com/oidc"),
       process.env.REPL_ID!
     );
   },
@@ -157,7 +157,7 @@ export async function setupAuth(app: Express) {
 
   // Helper function to ensure strategy exists for a domain
   const ensureStrategy = (domain: string) => {
-    const strategyName = `replitauth:${domain}`;
+    const strategyName = `auth:${domain}`;
     if (!registeredStrategies.has(strategyName)) {
       const strategy = new Strategy(
         {
@@ -178,7 +178,7 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/login", (req, res, next) => {
     ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    passport.authenticate(`auth:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
@@ -186,7 +186,7 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/callback", (req, res, next) => {
     ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    passport.authenticate(`auth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
