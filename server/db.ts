@@ -34,28 +34,28 @@ async function initializeDatabase() {
       // Create a more complete mock database object for development
       db = {
         select: () => ({
-          from: () => ({
-            where: () => Promise.resolve([]),
-            orderBy: () => Promise.resolve([]),
+          from: (table: any) => ({
+            where: (condition: any) => Promise.resolve([]),
+            orderBy: (...args: any[]) => Promise.resolve([]),
             execute: () => Promise.resolve([])
           }),
           execute: () => Promise.resolve([])
         }),
-        insert: () => ({ 
-          values: () => ({ 
+        insert: (table: any) => ({ 
+          values: (data: any) => ({ 
             returning: () => Promise.resolve([]),
-            onDuplicateKeyUpdate: () => ({ returning: () => Promise.resolve([]) }),
+            onDuplicateKeyUpdate: (updateData: any) => ({ returning: () => Promise.resolve([]) }),
             execute: () => Promise.resolve()
           })
         }),
-        update: () => ({ 
-          set: () => ({ 
-            where: () => ({ returning: () => Promise.resolve([]) }),
+        update: (table: any) => ({ 
+          set: (data: any) => ({ 
+            where: (condition: any) => ({ returning: () => Promise.resolve([]) }),
             execute: () => Promise.resolve()
           })
         }),
-        delete: () => ({ 
-          where: () => ({ returning: () => Promise.resolve([]) }),
+        delete: (table: any) => ({ 
+          where: (condition: any) => ({ returning: () => Promise.resolve([]) }),
           execute: () => Promise.resolve()
         }),
         transaction: async (fn: any) => {
