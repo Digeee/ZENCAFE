@@ -115,9 +115,9 @@ export async function setupAuth(app: Express) {
     
     // Add a simple login route for development
     app.get("/api/login", (req, res) => {
-      // Create a mock user for development
+      // Create a mock user for development with admin access
       const mockUser = {
-        claims: { sub: 'local-dev-user', email: 'dev@example.com', first_name: 'Dev', last_name: 'User' },
+        claims: { sub: 'local-dev-user', email: 'admin@example.com', first_name: 'Admin', last_name: 'User' },
         access_token: 'local-dev-token',
         refresh_token: 'local-dev-refresh',
         expires_at: Math.floor(Date.now() / 1000) + 3600,
@@ -127,7 +127,7 @@ export async function setupAuth(app: Express) {
         if (err) {
           return res.status(500).json({ message: 'Login failed' });
         }
-        res.redirect('/');
+        res.redirect('/admin');
       });
     });
     
