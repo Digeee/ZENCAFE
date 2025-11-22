@@ -8,6 +8,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import type { Product, Order, ContactMessage, Category } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,7 +28,8 @@ import {
   Filter,
   Search,
   BarChart3,
-  Users
+  Users,
+  Loader2
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -338,6 +340,14 @@ export default function EnhancedAdminDashboard() {
                     </DialogHeader>
                     <Form {...productForm}>
                       <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
+                        {(createProductMutation.isError || updateProductMutation.isError) && (
+                          <Alert variant="destructive" data-testid="alert-product-error">
+                            <AlertTitle>Error</AlertTitle>
+                            <AlertDescription>
+                              {(createProductMutation.error || updateProductMutation.error)?.message || "Failed to save product"}
+                            </AlertDescription>
+                          </Alert>
+                        )}
                         <FormField
                           control={productForm.control}
                           name="name"
@@ -474,14 +484,53 @@ export default function EnhancedAdminDashboard() {
                             )}
                           />
                         </div>
-                        <Button 
-                          type="submit" 
-                          className="w-full" 
-                          disabled={createProductMutation.isPending || updateProductMutation.isPending}
-                          data-testid="button-save-product"
-                        >
-                          {editingProduct ? "Update Product" : "Create Product"}
-                        </Button>
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-2">Preview</p>
+                            <Card>
+                              <CardContent className="p-4">
+                                <div className="flex items-start gap-4">
+                                  <div className="h-16 w-16 rounded-md overflow-hidden bg-muted">
+                                    {productForm.watch("imageUrl") ? (
+                                      <img
+                                        src={productForm.watch("imageUrl")}
+                                        alt={productForm.watch("name") || "Preview"}
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.src = "/api/placeholder/64/64";
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="h-full w-full flex items-center justify-center">
+                                        <Package className="h-5 w-5 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 space-y-1">
+                                    <div className="font-medium">{productForm.watch("name") || "Product name"}</div>
+                                    <div className="text-sm text-muted-foreground line-clamp-2">
+                                      {productForm.watch("description") || "Product description"}
+                                    </div>
+                                    <div className="text-sm font-medium">LKR {productForm.watch("price") || "0.00"}</div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+
+                          <Button 
+                            type="submit" 
+                            className="w-full" 
+                            disabled={createProductMutation.isPending || updateProductMutation.isPending}
+                            data-testid="button-save-product"
+                          >
+                            {(createProductMutation.isPending || updateProductMutation.isPending) && (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            )}
+                            {editingProduct ? "Updating..." : (createProductMutation.isPending ? "Creating..." : "Create Product")}
+                          </Button>
+                        </div>
                       </form>
                     </Form>
                   </DialogContent>
