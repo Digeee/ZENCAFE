@@ -1,4 +1,4 @@
-import express, { type Request, type Response, type Router } from "express";
+import express, { type Request, type Response, type Router, type Express } from "express";
 import { storage } from "./storage";
 import { isAdmin, isAuthenticated } from "./auth";
 
@@ -29,3 +29,6 @@ router.delete("/api/notes/:id", isAdmin, (req: Request, res: Response) => {
 });
 
 export default router;
+export async function registerRoutes(app: Express) {
+  app.use(router);
+}
