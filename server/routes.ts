@@ -93,6 +93,38 @@ router.post("/api/admin/categories/seed", isAdmin, async (_req: Request, res: Re
   res.status(201).json(created);
 });
 
+// Orders: customer checkout and history
+router.post("/api/orders", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as any)?.claims?.sub || "local-dev-user";
+    const { items, ...orderData } = req.body as any;
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ message: "Order must contain items" });
+      return;
+    }
+    const order = await storage.createOrder(orderData, userId, items);
+    res.status(201).json(order);
+  } catch (e: any) {
+    res.status(400).json({ message: e?.message || "Failed to create order" });
+  }
+});
+
+router.get("/api/orders", isAuthenticated, async (req: Request, res: Response) => {
+  const userId = (req.user as any)?.claims?.sub || "local-dev-user";
+  const orders = await storage.getOrdersByUserId(userId);
+  res.json(orders);
+});
+
+router.get("/api/orders/items", isAuthenticated, async (req: Request, res: Response) => {
+  const userId = (req.user as any)?.claims?.sub || "local-dev-user";
+  const orders = await storage.getOrdersByUserId(userId);
+  const map: Record<string, any[]> = {};
+  for (const o of orders) {
+    map[o.id] = await storage.getOrderItemsByOrderId(o.id);
+  }
+  res.json(map);
+});
+
 router.get("/api/notes", isAuthenticated, (req: Request, res: Response) => {
   const notes = storage.getNotes();
   res.json(notes);
