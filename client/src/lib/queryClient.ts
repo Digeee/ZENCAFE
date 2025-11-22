@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import React, { createContext, useMemo } from "react";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -55,3 +56,23 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+type AuthState = {
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  isLoading: boolean;
+  user?: any;
+};
+
+export const AuthContext = createContext<AuthState | null>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const value = useMemo<AuthState>(() => ({
+    isAuthenticated: true,
+    isAdmin: true,
+    isLoading: false,
+    user: { email: "admin@example.com" },
+  }), []);
+
+  return React.createElement(AuthContext.Provider, { value }, children);
+}
