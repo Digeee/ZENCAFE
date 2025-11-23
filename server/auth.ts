@@ -127,7 +127,7 @@ export async function setupAuth(app: Express) {
         if (err) {
           return res.status(500).json({ message: 'Login failed' });
         }
-        res.redirect('/admin');
+        res.redirect('/dashboard');
       });
     });
     

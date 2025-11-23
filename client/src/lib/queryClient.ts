@@ -99,9 +99,9 @@ export const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthState>(() => ({
     isAuthenticated: true,
-    isAdmin: true,
+    isAdmin: false,
     isLoading: false,
-    user: { email: "admin@example.com" },
+    user: { email: "user@example.com" },
   }), []);
 
   return React.createElement(AuthContext.Provider, { value }, children);
