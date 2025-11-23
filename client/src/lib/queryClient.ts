@@ -1,5 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import React, { createContext, useMemo } from "react";
+import React, { createContext, useEffect, useState } from "react";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -97,12 +97,35 @@ type AuthState = {
 export const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const value = useMemo<AuthState>(() => ({
-    isAuthenticated: true,
+  const [state, setState] = useState<AuthState>({
+    isAuthenticated: false,
     isAdmin: false,
-    isLoading: false,
-    user: { email: "user@example.com" },
-  }), []);
+    isLoading: true,
+    user: undefined,
+  });
 
-  return React.createElement(AuthContext.Provider, { value }, children);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/me", { credentials: "include" });
+        const data = await res.json();
+        if (!cancelled) {
+          setState({
+            isAuthenticated: !!data.isAuthenticated,
+            isAdmin: !!data.isAdmin,
+            isLoading: false,
+            user: data.user || undefined,
+          });
+        }
+      } catch {
+        if (!cancelled) {
+          setState({ isAuthenticated: false, isAdmin: false, isLoading: false, user: undefined });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  return React.createElement(AuthContext.Provider, { value: state }, children);
 }

@@ -115,19 +115,34 @@ export async function setupAuth(app: Express) {
     
     // Add a simple login route for development
     app.get("/api/login", (req, res) => {
-      // Create a mock user for development with admin access
       const mockUser = {
-        claims: { sub: 'local-dev-user', email: 'admin@example.com', first_name: 'Admin', last_name: 'User' },
+        claims: { sub: 'local-dev-user', email: 'user@example.com', first_name: 'Common', last_name: 'User' },
         access_token: 'local-dev-token',
         refresh_token: 'local-dev-refresh',
         expires_at: Math.floor(Date.now() / 1000) + 3600,
+        isAdmin: false,
       };
-      
       req.login(mockUser, (err) => {
         if (err) {
           return res.status(500).json({ message: 'Login failed' });
         }
         res.redirect('/dashboard');
+      });
+    });
+
+    app.get("/api/login-admin", (req, res) => {
+      const mockUser = {
+        claims: { sub: 'local-dev-admin', email: 'admin@example.com', first_name: 'Admin', last_name: 'User' },
+        access_token: 'local-dev-token',
+        refresh_token: 'local-dev-refresh',
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        isAdmin: true,
+      };
+      req.login(mockUser, (err) => {
+        if (err) {
+          return res.status(500).json({ message: 'Login failed' });
+        }
+        res.redirect('/admin');
       });
     });
     
