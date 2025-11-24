@@ -1,6 +1,7 @@
 import express, { type Request, type Response, type Router, type Express } from "express";
 import { storage } from "./storage";
 import { isAdmin, isAuthenticated } from "./auth";
+import type { Product } from "@shared/schema";
 
 const router: Router = express.Router();
 
@@ -22,8 +23,16 @@ router.get("/api/categories", async (_req: Request, res: Response) => {
 
 // Public: Products
 router.get("/api/products", async (req: Request, res: Response) => {
-  const items = await storage.getProducts();
+  const categoryId = req.query.category as string;
   const featuredParam = req.query.featured;
+  
+  let items: Product[];
+  if (categoryId) {
+    items = await storage.getProductsByCategory(categoryId);
+  } else {
+    items = await storage.getProducts();
+  }
+  
   const filtered = featuredParam ? items.filter(p => !!p.featured) : items;
   res.json(filtered);
 });
