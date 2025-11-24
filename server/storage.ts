@@ -36,6 +36,7 @@ export interface IStorage {
   // Product operations
   getProducts(): Promise<Product[]>;
   getProductsByCategory(categoryId: string): Promise<Product[]>;
+  getProductsByCategorySlug(categorySlug: string): Promise<Product[]>;
   getProductById(id: string): Promise<Product | undefined>;
   getProductBySlug(slug: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
@@ -119,6 +120,16 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(products)
       .where(eq(products.categoryId, categoryId))
+      .orderBy(desc(products.featured), desc(products.createdAt));
+  }
+
+  async getProductsByCategorySlug(categorySlug: string): Promise<Product[]> {
+    // Join products with categories to filter by slug
+    return await db
+      .select(products)
+      .from(products)
+      .innerJoin(categories, eq(products.categoryId, categories.id))
+      .where(eq(categories.slug, categorySlug))
       .orderBy(desc(products.featured), desc(products.createdAt));
   }
 

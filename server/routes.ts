@@ -23,12 +23,12 @@ router.get("/api/categories", async (_req: Request, res: Response) => {
 
 // Public: Products
 router.get("/api/products", async (req: Request, res: Response) => {
-  const categoryId = req.query.category as string;
+  const categorySlug = req.query.category as string;
   const featuredParam = req.query.featured;
   
   let items: Product[];
-  if (categoryId) {
-    items = await storage.getProductsByCategory(categoryId);
+  if (categorySlug) {
+    items = await storage.getProductsByCategorySlug(categorySlug);
   } else {
     items = await storage.getProducts();
   }
