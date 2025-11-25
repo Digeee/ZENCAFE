@@ -137,7 +137,7 @@ router.get("/api/orders/items", isAuthenticated, async (req: Request, res: Respo
 router.get("/api/me", async (req: Request, res: Response) => {
   const dev = process.env.NODE_ENV === 'development';
   const user = (req.user as any) || null;
-  const isAuthenticated = dev ? true : !!user;
+  const isAuthenticated = dev ? !!user : !!user;
   const isAdmin = !!(user && user.isAdmin);
   res.json({ isAuthenticated, isAdmin, user });
 });
