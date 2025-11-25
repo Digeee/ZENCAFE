@@ -29,7 +29,9 @@ import {
   Search,
   BarChart3,
   Users,
-  Loader2
+  Loader2,
+  ShieldAlert,
+  LogOut
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,7 +56,7 @@ const productFormSchema = z.object({
 type ProductFormData = z.infer<typeof productFormSchema>;
 
 export default function EnhancedAdminDashboard() {
-  const { isAdmin, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAdmin, isAuthenticated, isLoading: authLoading, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("products");
@@ -944,61 +946,63 @@ export default function EnhancedAdminDashboard() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen py-12 px-4 flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (!isAuthenticated || !isAdmin) {
     return (
-      <div className="min-h-screen py-12 px-4 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="text-4xl">🔒</div>
-          <h2 className="text-2xl font-bold">Access Denied</h2>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-background to-muted">
+        <div className="text-center space-y-4 p-8 rounded-lg bg-card shadow-lg max-w-md">
+          <ShieldAlert className="h-16 w-16 text-destructive mx-auto" />
+          <h1 className="text-2xl font-bold text-foreground">Access Denied</h1>
           <p className="text-muted-foreground">
             You must be an administrator to access this page.
           </p>
-          <Button onClick={() => window.location.href = "/"}>Return to Home</Button>
+          <Button 
+            onClick={() => window.location.href = "/"} 
+            className="mt-4"
+          >
+            Return to Home
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Sidebar */}
-      <div className="w-64 border-r hidden md:block">
-        <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
-      </div>
+    <div className="flex min-h-screen bg-gradient-to-br from-background to-muted">
+      <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
       
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Mobile header with menu button */}
-        <div className="md:hidden p-4 border-b">
-          <div className="flex items-center justify-between">
-            <h1 className="font-serif text-2xl font-medium">Admin Panel</h1>
-            <Button variant="outline" size="icon" onClick={() => document.querySelector('.mobile-menu')?.classList.toggle('hidden')}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-              </svg>
-            </Button>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="border-b bg-card shadow-sm">
+          <div className="flex items-center justify-between px-6 py-4">
+            <div>
+              <h1 className="font-serif text-2xl font-medium text-foreground">Admin Dashboard</h1>
+              <p className="text-sm text-muted-foreground">
+                Welcome back, {user?.firstName || user?.email}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = "/api/logout"}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </div>
           </div>
-        </div>
-        
-        {/* Mobile menu */}
-        <div className="mobile-menu hidden md:hidden absolute top-16 left-0 right-0 z-50 bg-background border-b">
-          <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
-        
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-4 md:p-8">
-          <div className="container mx-auto max-w-7xl">
-            {renderContent()}
-          </div>
-        </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto p-6">
+          {renderContent()}
+        </main>
       </div>
     </div>
   );
