@@ -142,6 +142,37 @@ router.get("/api/me", async (req: Request, res: Response) => {
   res.json({ isAuthenticated, isAdmin, user });
 });
 
+// Placeholder image handler for development
+router.get("/api/placeholder/:width/:height", (req: Request, res: Response) => {
+  const { width, height } = req.params;
+  // Validate dimensions
+  if (!/^\d+$/.test(width) || !/^\d+$/.test(height)) {
+    return res.status(400).json({ message: "Invalid dimensions" });
+  }
+  
+  // Redirect to a placeholder service
+  res.redirect(`https://placehold.co/${width}x${height}?text=ZEN+CAFE`);
+});
+
+router.get("/api/placeholder/:category", (req: Request, res: Response) => {
+  const { category } = req.params;
+  const validCategories = ['coffee-category', 'tea-category', 'pastries-category', 'new-coffee'];
+  
+  if (!validCategories.includes(category)) {
+    return res.status(400).json({ message: "Invalid category" });
+  }
+  
+  // Map categories to specific images or use generic placeholders
+  const categoryImages: Record<string, string> = {
+    'coffee-category': 'https://placehold.co/400x300/8B4513/FFFFFF?text=Coffee',
+    'tea-category': 'https://placehold.co/400x300/228B22/FFFFFF?text=Tea',
+    'pastries-category': 'https://placehold.co/400x300/D2691E/FFFFFF?text=Pastries',
+    'new-coffee': 'https://placehold.co/400x400/8B4513/FFFFFF?text=New+Coffee'
+  };
+  
+  res.redirect(categoryImages[category]);
+});
+
 export default router;
 export async function registerRoutes(app: Express) {
   app.use(router);
