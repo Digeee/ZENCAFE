@@ -142,6 +142,54 @@ router.get("/api/me", async (req: Request, res: Response) => {
   res.json({ isAuthenticated, isAdmin, user });
 });
 
+// Admin: Orders management
+router.get("/api/admin/orders", isAdmin, async (_req: Request, res: Response) => {
+  try {
+    const orders = await storage.getOrders();
+    res.json(orders);
+  } catch (error: any) {
+    res.status(500).json({ message: error?.message || "Failed to fetch orders" });
+  }
+});
+
+router.patch("/api/admin/orders/:id/status", isAdmin, async (req: Request, res: Response) => {
+  try {
+    const { status } = req.body;
+    const order = await storage.updateOrderStatus(req.params.id, status);
+    if (!order) {
+      res.status(404).json({ message: "Order not found" });
+      return;
+    }
+    res.json(order);
+  } catch (error: any) {
+    res.status(400).json({ message: error?.message || "Failed to update order status" });
+  }
+});
+
+// Admin: Messages management
+router.get("/api/admin/messages", isAdmin, async (_req: Request, res: Response) => {
+  try {
+    const messages = await storage.getContactMessages();
+    res.json(messages);
+  } catch (error: any) {
+    res.status(500).json({ message: error?.message || "Failed to fetch messages" });
+  }
+});
+
+router.patch("/api/admin/messages/:id/status", isAdmin, async (req: Request, res: Response) => {
+  try {
+    const { status } = req.body;
+    const message = await storage.updateContactMessageStatus(req.params.id, status);
+    if (!message) {
+      res.status(404).json({ message: "Message not found" });
+      return;
+    }
+    res.json(message);
+  } catch (error: any) {
+    res.status(400).json({ message: error?.message || "Failed to update message status" });
+  }
+});
+
 // Placeholder image handler for development
 router.get("/api/placeholder/:width/:height", (req: Request, res: Response) => {
   const { width, height } = req.params;
