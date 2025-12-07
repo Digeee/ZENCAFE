@@ -843,6 +843,90 @@ export default function EnhancedAdminDashboard() {
           </div>
         );
       
+      case "customers":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-serif text-2xl font-medium">Customer Management</h2>
+              <p className="text-muted-foreground text-sm">
+                View and manage your customers
+              </p>
+            </div>
+            
+            <Card>
+              <CardContent className="p-0">
+                {usersLoading ? (
+                  <div className="p-6 space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Joined</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8">
+                            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-muted-foreground">No customers found</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Customers will appear here when they register
+                            </p>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        users.map((user) => (
+                          <TableRow key={user.id} className="hover:bg-muted/50">
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarFallback>
+                                    {user.firstName?.charAt(0) || user.email?.charAt(0) || "U"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-medium">
+                                    {user.firstName} {user.lastName}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    ID: {user.id.substring(0, 8)}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium">{user.email}</TableCell>
+                            <TableCell>
+                              <Badge variant={user.isAdmin ? "default" : "secondary"}>
+                                {user.isAdmin ? "Admin" : "Customer"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {new Date(user.createdAt).toLocaleDateString()}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(user.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+      
       case "analytics":
         return (
           <div className="space-y-6">

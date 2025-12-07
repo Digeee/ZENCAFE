@@ -190,6 +190,16 @@ router.patch("/api/admin/messages/:id/status", isAdmin, async (req: Request, res
   }
 });
 
+// Admin: Users management
+router.get("/api/admin/users", isAdmin, async (_req: Request, res: Response) => {
+  try {
+    const users = await storage.getUsers();
+    res.json(users);
+  } catch (error: any) {
+    res.status(500).json({ message: error?.message || "Failed to fetch users" });
+  }
+});
+
 // Placeholder image handler for development
 router.get("/api/placeholder/:width/:height", (req: Request, res: Response) => {
   const { width, height } = req.params;

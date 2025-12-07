@@ -26,6 +26,7 @@ import { nanoid } from "nanoid";
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>;
 
   // Category operations
@@ -66,6 +67,10 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0];
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
