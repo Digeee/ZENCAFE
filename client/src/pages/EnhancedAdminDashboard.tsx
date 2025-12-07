@@ -888,37 +888,37 @@ export default function EnhancedAdminDashboard() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        users.map((user) => (
-                          <TableRow key={user.id} className="hover:bg-muted/50">
+                        users.map((userItem) => (
+                          <TableRow key={userItem.id} className="hover:bg-muted/50">
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10">
                                   <AvatarFallback>
-                                    {user.firstName?.charAt(0) || user.email?.charAt(0) || "U"}
+                                    {userItem.firstName?.charAt(0) || userItem.email?.charAt(0) || "U"}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div>
                                   <div className="font-medium">
-                                    {user.firstName} {user.lastName}
+                                    {userItem.firstName} {userItem.lastName}
                                   </div>
                                   <div className="text-sm text-muted-foreground">
-                                    ID: {user.id.substring(0, 8)}
+                                    ID: {userItem.id.substring(0, 8)}
                                   </div>
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell className="font-medium">{user.email}</TableCell>
+                            <TableCell className="font-medium">{userItem.email}</TableCell>
                             <TableCell>
-                              <Badge variant={user.isAdmin ? "default" : "secondary"}>
-                                {user.isAdmin ? "Admin" : "Customer"}
+                              <Badge variant={userItem.isAdmin ? "default" : "secondary"}>
+                                {userItem.isAdmin ? "Admin" : "Customer"}
                               </Badge>
                             </TableCell>
                             <TableCell>
                               <div className="text-sm">
-                                {new Date(user.createdAt).toLocaleDateString()}
+                                {new Date(userItem.createdAt).toLocaleDateString()}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {new Date(user.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(userItem.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
                             </TableCell>
                           </TableRow>
