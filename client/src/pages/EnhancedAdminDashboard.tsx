@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import type { Product, Order, ContactMessage, Category } from "@shared/schema";
+import type { Product, Order, ContactMessage, Category, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -929,6 +929,132 @@ export default function EnhancedAdminDashboard() {
                 )}
               </CardContent>
             </Card>
+          </div>
+        );
+      
+      case "settings":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-serif text-2xl font-medium">System Settings</h2>
+              <p className="text-muted-foreground text-sm">
+                Configure your application settings
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    General Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Site Name</label>
+                    <Input defaultValue="Zen Cafe" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Contact Email</label>
+                    <Input type="email" defaultValue="info@zencafe.lk" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Currency</label>
+                    <Select defaultValue="LKR">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="LKR">LKR (Sri Lankan Rupee)</SelectItem>
+                        <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                        <SelectItem value="EUR">EUR (Euro)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <Button className="mt-4">Save Changes</Button>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Admin Users
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium">Current Admins</p>
+                        <p className="text-sm text-muted-foreground">Manage administrative access</p>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Admin
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>A</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium">Admin User</p>
+                            <p className="text-xs text-muted-foreground">admin@zencafe.lk</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Analytics & Tracking
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Google Analytics ID</label>
+                      <Input placeholder="GA-XXXXXXXXX" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Facebook Pixel ID</label>
+                      <Input placeholder="XXXXXXXXXXXXXXX" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Meta Tag Verification</label>
+                      <Input placeholder="XXXXXXXXXXXXXXX" />
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 pt-4">
+                    <Switch id="analytics-enabled" />
+                    <label htmlFor="analytics-enabled" className="text-sm font-medium">
+                      Enable Analytics Tracking
+                    </label>
+                  </div>
+                  
+                  <Button className="mt-4">Save Analytics Settings</Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         );
       
