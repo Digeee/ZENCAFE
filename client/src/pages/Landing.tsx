@@ -2,7 +2,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Coffee, Leaf, Sparkles } from "lucide-react";
+import { ArrowRight, Coffee, Leaf, Sparkles, Award, Truck, Recycle } from "lucide-react";
 import heroImage from "@assets/generated_images/ceylon_tea_plantation_hero.png";
 import teaImage from "@assets/generated_images/ceylon_tea_product_shot.png";
 import coffeeImage from "@assets/generated_images/coffee_category_image.png";
@@ -231,6 +231,103 @@ export default function Landing() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Values Section */}
+      <section className="py-20 px-4 bg-background">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center space-y-4 mb-12">
+            <h2 className="font-serif text-4xl md:text-5xl font-medium">
+              Our Values
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              What makes ZEN CAFE different
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="p-6 text-center hover-elevate transition-all duration-300">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Award className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="font-serif text-2xl font-medium mb-2">Premium Quality</h3>
+              <p className="text-muted-foreground">
+                We source only the finest Ceylon coffee beans and tea leaves, ensuring exceptional taste in every cup.
+              </p>
+            </Card>
+            <Card className="p-6 text-center hover-elevate transition-all duration-300">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Truck className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="font-serif text-2xl font-medium mb-2">Fast Delivery</h3>
+              <p className="text-muted-foreground">
+                Freshly roasted and delivered to your door within 48 hours of ordering for the best experience.
+              </p>
+            </Card>
+            <Card className="p-6 text-center hover-elevate transition-all duration-300">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Recycle className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="font-serif text-2xl font-medium mb-2">Sustainable Practices</h3>
+              <p className="text-muted-foreground">
+                Eco-friendly packaging and carbon-neutral shipping to protect our beautiful planet.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Signup */}
+      <section className="py-20 px-4 bg-muted/30">
+        <div className="container mx-auto max-w-4xl">
+          <Card className="p-8 md:p-12 text-center">
+            <div className="space-y-4">
+              <h2 className="font-serif text-3xl md:text-4xl font-medium">
+                Join Our Community
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Subscribe to receive exclusive offers, new product announcements, and brewing tips.
+              </p>
+              <div className="max-w-md mx-auto flex flex-col sm:flex-row gap-2 mt-6">
+                <input
+                  type="email"
+                  placeholder="Your email address"
+                  className="flex-1 px-4 py-2 rounded-md border border-input bg-background"
+                />
+                <Button className="whitespace-nowrap">
+                  Subscribe
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mt-4">
+                By subscribing, you agree to our Privacy Policy and consent to receive updates.
+              </p>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-20 px-4 bg-background">
+        <div className="container mx-auto max-w-4xl text-center">
+          <h2 className="font-serif text-4xl md:text-5xl font-medium mb-6">
+            Ready to Experience Ceylon?
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+            Discover the authentic taste of Sri Lanka with our premium selection of coffee, tea, and pastries.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/menu">
+              <Button size="lg" className="gap-2">
+                Shop Now
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+            </Link>
+            <Link href="/contact">
+              <Button size="lg" variant="outline">
+                Contact Us
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
