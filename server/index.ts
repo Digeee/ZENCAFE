@@ -23,6 +23,9 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Serve attached assets
+app.use('/assets', express.static(path.resolve(process.cwd(), 'attached_assets')));
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
