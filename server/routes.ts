@@ -190,6 +190,41 @@ router.patch("/api/admin/messages/:id/status", isAdmin, async (req: Request, res
   }
 });
 
+// Admin: Notifications management
+router.get("/api/admin/notifications", isAdmin, async (req: Request, res: Response) => {
+  try {
+    // For now, we'll return all notifications with null userId (admin notifications)
+    // In a real implementation, we might have user-specific notifications as well
+    const notifications = await storage.getNotifications(null as any);
+    res.json(notifications);
+  } catch (error: any) {
+    res.status(500).json({ message: error?.message || "Failed to fetch notifications" });
+  }
+});
+
+router.patch("/api/admin/notifications/:id/read", isAdmin, async (req: Request, res: Response) => {
+  try {
+    const notification = await storage.markNotificationAsRead(req.params.id);
+    if (!notification) {
+      res.status(404).json({ message: "Notification not found" });
+      return;
+    }
+    res.json(notification);
+  } catch (error: any) {
+    res.status(400).json({ message: error?.message || "Failed to mark notification as read" });
+  }
+});
+
+router.get("/api/admin/notifications/unread-count", isAdmin, async (req: Request, res: Response) => {
+  try {
+    // For now, we'll count all unread notifications with null userId (admin notifications)
+    const count = await storage.getUnreadNotificationsCount(null as any);
+    res.json({ count });
+  } catch (error: any) {
+    res.status(500).json({ message: error?.message || "Failed to fetch unread notifications count" });
+  }
+});
+
 // Admin: Users management
 router.get("/api/admin/users", isAdmin, async (_req: Request, res: Response) => {
   try {
