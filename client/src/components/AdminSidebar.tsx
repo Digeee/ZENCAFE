@@ -1,6 +1,8 @@
 // Admin sidebar navigation
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Package, 
   ShoppingBag, 
@@ -8,17 +10,28 @@ import {
   BarChart3, 
   Users, 
   Settings,
-  LogOut
+  LogOut,
+  Bell
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 
 interface AdminSidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
 }
 
+interface NotificationCount {
+  count: number;
+}
+
 export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
   const { user } = useAuth();
+  
+  const { data: notificationCount } = useQuery<NotificationCount>({
+    queryKey: ["/api/admin/notifications/unread-count"],
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
 
   const menuItems = [
     { id: "products", label: "Products", icon: Package },
@@ -59,6 +72,11 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
                     <Icon className="h-4 w-4" />
                   </div>
                   <span className="font-medium">{item.label}</span>
+                  {item.id === "orders" && notificationCount && notificationCount.count > 0 && (
+                    <Badge variant="destructive" className="ml-auto">
+                      {notificationCount.count}
+                    </Badge>
+                  )}
                 </Button>
               </li>
             );
