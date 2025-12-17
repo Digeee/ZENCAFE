@@ -173,13 +173,13 @@ export const notifications = mysqlTable("notifications", {
   type: mysqlEnum("type", ["order_placed", "message_received", "order_status_changed"]).notNull(),
   title: varchar("title", { length: 200 }).notNull(),
   message: text("message").notNull(),
-  read: boolean("read").notNull().default(false),
+  isRead: boolean("is_read").notNull().default(false),
   entityId: varchar("entity_id", { length: 255 }), // Reference to order ID or message ID
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_notifications_user").on(table.userId),
   index("idx_notifications_type").on(table.type),
-  index("idx_notifications_read").on(table.read),
+  index("idx_notifications_read").on(table.isRead),
   index("idx_notifications_created").on(table.createdAt),
 ]);
 

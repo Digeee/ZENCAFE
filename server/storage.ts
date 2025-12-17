@@ -15,15 +15,13 @@ import {
   type InsertProduct,
   type Order,
   type InsertOrder,
-  type OrderItem,
-  type InsertOrderItem,
   type ContactMessage,
   type InsertContactMessage,
   type Notification,
   type InsertNotification,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, like, desc, sql } from "drizzle-orm";
+import { eq, and, like, desc, sql, isNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export interface IStorage {
@@ -355,7 +353,7 @@ export class DatabaseStorage implements IStorage {
   async markNotificationAsRead(id: string): Promise<Notification | undefined> {
     await db
       .update(notifications)
-      .set({ read: true, updatedAt: new Date() } as any)
+      .set({ isRead: true, updatedAt: new Date() } as any)
       .where(eq(notifications.id, id));
     
     // Get the updated notification
@@ -363,13 +361,13 @@ export class DatabaseStorage implements IStorage {
     return notification;
   }
 
-  async getUnreadNotificationsCount(userId: string): Promise<number> {
+  async getUnreadNotificationsCount(userId: string | null): Promise<number> {
     const result = await db
       .select({ count: sql<number>`count(*)` })
       .from(notifications)
       .where(and(
-        eq(notifications.userId, userId),
-        eq(notifications.read, false)
+        userId ? eq(notifications.userId, userId) : eq(notifications.userId, null),
+        eq(notifications.isRead, false)
       ));
     
     return result[0]?.count || 0;
