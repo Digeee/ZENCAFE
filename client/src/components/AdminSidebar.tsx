@@ -37,6 +37,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
     { id: "products", label: "Products", icon: Package },
     { id: "orders", label: "Orders", icon: ShoppingBag },
     { id: "messages", label: "Messages", icon: MessageSquare },
+    { id: "notifications", label: "Notifications", icon: Bell },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
     { id: "customers", label: "Customers", icon: Users },
     { id: "settings", label: "Settings", icon: Settings },
