@@ -6,6 +6,7 @@ import {
   orders,
   orderItems,
   contactMessages,
+  notifications,
   type User,
   type UpsertUser,
   type Category,
@@ -14,10 +15,10 @@ import {
   type InsertProduct,
   type Order,
   type InsertOrder,
-  type OrderItem,
-  type InsertOrderItem,
   type ContactMessage,
   type InsertContactMessage,
+  type Notification,
+  type InsertNotification,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, like, desc, sql } from "drizzle-orm";
@@ -59,6 +60,12 @@ export interface IStorage {
   getContactMessages(): Promise<ContactMessage[]>;
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
   updateContactMessageStatus(id: string, status: string): Promise<ContactMessage | undefined>;
+
+  // Notification operations
+  getNotifications(userId: string): Promise<Notification[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationAsRead(id: string): Promise<Notification | undefined>;
+  getUnreadNotificationsCount(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -303,6 +310,56 @@ export class DatabaseStorage implements IStorage {
     const [message] = await db.select().from(contactMessages).where(eq(contactMessages.id, id));
     return message;
   }
+
+  // ==================== NOTIFICATION OPERATIONS ====================
+
+  async getNotifications(userId: string): Promise<Notification[]> {
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async createNotification(notificationData: InsertNotification): Promise<Notification> {
+    const dataWithId = {
+      ...notificationData,
+      id: nanoid()
+    } as any;
+    
+    await db
+      .insert(notifications)
+      .values(dataWithId);
+    
+    // Get the inserted notification
+    const [notification] = await db.select().from(notifications).where(eq(notifications.id, dataWithId.id));
+    return notification;
+  }
+
+  async markNotificationAsRead(id: string): Promise<Notification | undefined> {
+    await db
+      .update(notifications)
+      .set({ read: true, updatedAt: new Date() } as any)
+      .where(eq(notifications.id, id));
+    
+    // Get the updated notification
+    const [notification] = await db.select().from(notifications).where(eq(notifications.id, id));
+    return notification;
+  }
+
+  async getUnreadNotificationsCount(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.read, false)
+      ));
+    
+    return result[0]?.count || 0;
+  }
+
+  // ==================== ORDER OPERATIONS ====================
 }
 
 export const storage = new DatabaseStorage();
