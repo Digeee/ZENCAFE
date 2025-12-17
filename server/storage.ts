@@ -15,6 +15,8 @@ import {
   type InsertProduct,
   type Order,
   type InsertOrder,
+  type OrderItem,
+  type InsertOrderItem,
   type ContactMessage,
   type InsertContactMessage,
   type Notification,
@@ -366,7 +368,7 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`count(*)` })
       .from(notifications)
       .where(and(
-        userId ? eq(notifications.userId, userId) : eq(notifications.userId, null),
+        userId ? eq(notifications.userId, userId) : isNull(notifications.userId),
         eq(notifications.isRead, false)
       ));
     
