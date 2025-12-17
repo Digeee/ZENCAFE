@@ -152,6 +152,20 @@ export const orderItems = mysqlTable("order_items", {
   index("idx_order_items_product").on(table.productId),
 ]);
 
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderItems.orderId],
+    references: [orders.id],
+  }),
+  product: one(products, {
+    fields: [orderItems.productId],
+    references: [products.id],
+  }),
+}));
+
+export type OrderItem = typeof orderItems.$inferSelect;
+export type InsertOrderItem = typeof orderItems.$inferInsert;
+
 // Notifications table
 export const notifications = mysqlTable("notifications", {
   id: varchar("id", { length: 255 }).primaryKey(),
