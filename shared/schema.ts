@@ -152,8 +152,25 @@ export const orderItems = mysqlTable("order_items", {
   index("idx_order_items_product").on(table.productId),
 ]);
 
-export type OrderItem = typeof orderItems.$inferSelect;
-export type InsertOrderItem = typeof orderItems.$inferInsert;
+// Notifications table
+export const notifications = mysqlTable("notifications", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id", { length: 255 }), // Null for admin notifications
+  type: mysqlEnum("type", ["order_placed", "message_received", "order_status_changed"]).notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  message: text("message").notNull(),
+  read: boolean("read").notNull().default(false),
+  entityId: varchar("entity_id", { length: 255 }), // Reference to order ID or message ID
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_notifications_user").on(table.userId),
+  index("idx_notifications_type").on(table.type),
+  index("idx_notifications_read").on(table.read),
+  index("idx_notifications_created").on(table.createdAt),
+]);
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
 
 // Contact messages table
 export const contactMessages = mysqlTable("contact_messages", {
