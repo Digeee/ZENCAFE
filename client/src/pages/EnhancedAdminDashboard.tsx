@@ -32,6 +32,7 @@ import {
   Loader2,
   ShieldAlert,
   LogOut,
+  Settings,
   Bell,
   CheckCircle,
   Clock
@@ -91,6 +92,11 @@ export default function EnhancedAdminDashboard() {
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
+  });
+
+  const { data: notifications = [], isLoading: notificationsLoading } = useQuery<Notification[]>({
+    queryKey: ["/api/admin/notifications"],
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   // Filter products based on search term and category
