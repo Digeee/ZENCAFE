@@ -251,6 +251,20 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Create notification for admins about the new order
+    const totalAmount = parseFloat(order.totalAmount).toFixed(2);
+    const notificationMessage = `New order #${order.id.substring(0, 8)} placed by ${order.customerName} for LKR ${totalAmount}`;
+    
+    // In a real implementation, we would notify all admins
+    // For now, we'll create a notification that can be fetched by the admin panel
+    await this.createNotification({
+      type: "order_placed",
+      title: "New Order Placed",
+      message: notificationMessage,
+      entityId: order.id,
+      userId: null // Null indicates it's for all admins
+    } as any);
+
     return order;
   }
 
