@@ -252,6 +252,28 @@ export default function EnhancedAdminDashboard() {
     },
   });
 
+  const markNotificationAsReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("PATCH", `/api/admin/notifications/${id}/read`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/unread-count"] });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => window.location.href = "/api/login", 500);
+        return;
+      }
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     productForm.reset({
@@ -288,6 +310,10 @@ export default function EnhancedAdminDashboard() {
 
   const handleUpdateMessageStatus = (messageId: string, status: string) => {
     updateMessageStatusMutation.mutate({ id: messageId, status });
+  };
+
+  const handleMarkNotificationAsRead = (notificationId: string) => {
+    markNotificationAsReadMutation.mutate(notificationId);
   };
 
   const getStatusVariant = (status: string): "default" | "secondary" | "destructive" => {
@@ -1158,7 +1184,93 @@ export default function EnhancedAdminDashboard() {
             </Card>
           </div>
         );
-      
+
+      case "notifications":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-serif text-2xl font-medium">Notifications</h2>
+              <p className="text-muted-foreground text-sm">
+                Stay updated with important events and activities
+              </p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {notificationsLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="space-y-2">
+                        <Skeleton className="h-16 w-full rounded-lg" />
+                      </div>
+                    ))}
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="text-center py-12 space-y-4">
+                    <Bell className="h-12 w-12 text-muted-foreground mx-auto" />
+                    <div className="space-y-2">
+                      <p className="text-lg font-medium text-foreground">No notifications yet</p>
+                      <p className="text-sm text-muted-foreground">
+                        Notifications will appear here when important events occur
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {notifications.map((notification) => (
+                      <div 
+                        key={notification.id} 
+                        className={`p-4 rounded-lg border ${
+                          notification.read 
+                            ? "bg-muted/30 border-border" 
+                            : "bg-background border-primary/20 shadow-sm"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium text-foreground">
+                                {notification.title}
+                              </h3>
+                              {!notification.read && (
+                                <Badge variant="destructive" className="h-2 w-2 p-0 rounded-full">
+                                  <span className="sr-only">Unread</span>
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(notification.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                          {!notification.read && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMarkNotificationAsRead(notification.id)}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              <span className="sr-only">Mark as read</span>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+
       default:
         return (
           <div className="flex items-center justify-center h-64">
