@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import type { Product, Order, ContactMessage, Category, User } from "@shared/schema";
+import type { Product, Order, ContactMessage, Category, User, Notification } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -31,7 +31,10 @@ import {
   Users,
   Loader2,
   ShieldAlert,
-  LogOut
+  LogOut,
+  Bell,
+  CheckCircle,
+  Clock
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
