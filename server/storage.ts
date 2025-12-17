@@ -15,6 +15,8 @@ import {
   type InsertProduct,
   type Order,
   type InsertOrder,
+  type OrderItem,
+  type InsertOrderItem,
   type ContactMessage,
   type InsertContactMessage,
   type Notification,
