@@ -40,7 +40,9 @@ import {
   Upload,
   Download,
   MoreHorizontal,
-  Star
+  Star,
+  User,
+  Reply
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -344,6 +346,21 @@ export default function EnhancedAdminDashboard() {
     completed: orders.filter(o => o.status === "completed").length,
     cancelled: orders.filter(o => o.status === "cancelled").length,
     totalRevenue: orders.reduce((sum, order) => sum + parseFloat(order.totalAmount || 0), 0),
+  };
+
+  // Calculate customer statistics
+  const customerStats = {
+    total: users.length,
+    admins: users.filter(u => u.isAdmin).length,
+    customers: users.filter(u => !u.isAdmin).length,
+  };
+
+  // Calculate message statistics
+  const messageStats = {
+    total: messages.length,
+    new: messages.filter(m => m.status === "new").length,
+    read: messages.filter(m => m.status === "read").length,
+    replied: messages.filter(m => m.status === "replied").length,
   };
 
   // Handle product selection for bulk actions
@@ -1036,6 +1053,50 @@ export default function EnhancedAdminDashboard() {
       case "messages":
         return (
           <div className="space-y-6">
+            {/* Message Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Messages</CardTitle>
+                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{messageStats.total}</div>
+                  <p className="text-xs text-muted-foreground">All messages</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">New</CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{messageStats.new}</div>
+                  <p className="text-xs text-muted-foreground">Awaiting response</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Read</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{messageStats.read}</div>
+                  <p className="text-xs text-muted-foreground">Viewed</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Replied</CardTitle>
+                  <Reply className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{messageStats.replied}</div>
+                  <p className="text-xs text-muted-foreground">Responded to</p>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h2 className="font-serif text-2xl font-medium">Customer Messages</h2>
@@ -1119,6 +1180,40 @@ export default function EnhancedAdminDashboard() {
       case "customers":
         return (
           <div className="space-y-6">
+            {/* Customer Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{customerStats.total}</div>
+                  <p className="text-xs text-muted-foreground">All users</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Admins</CardTitle>
+                  <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{customerStats.admins}</div>
+                  <p className="text-xs text-muted-foreground">Administrators</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Regular Users</CardTitle>
+                  <User className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{customerStats.customers}</div>
+                  <p className="text-xs text-muted-foreground">Customers</p>
+                </CardContent>
+              </Card>
+            </div>
+
             <div>
               <h2 className="font-serif text-2xl font-medium">Customer Management</h2>
               <p className="text-muted-foreground text-sm">
