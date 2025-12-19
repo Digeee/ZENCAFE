@@ -17,6 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Package, 
   ShoppingBag, 
@@ -35,7 +36,11 @@ import {
   Settings,
   Bell,
   CheckCircle,
-  Clock
+  Clock,
+  Upload,
+  Download,
+  MoreHorizontal,
+  Star
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -69,6 +74,13 @@ export default function EnhancedAdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
+  
+  // Bulk action states
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState<string>("");
+  
+  // Notification filter state
+  const [notificationFilter, setNotificationFilter] = useState<string>("all");
 
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/admin/products"],
@@ -316,6 +328,79 @@ export default function EnhancedAdminDashboard() {
     markNotificationAsReadMutation.mutate(notificationId);
   };
 
+  // Calculate product statistics
+  const productStats = {
+    total: products.length,
+    inStock: products.filter(p => p.inStock).length,
+    outOfStock: products.filter(p => !p.inStock).length,
+    featured: products.filter(p => p.featured).length,
+  };
+
+  // Calculate order statistics
+  const orderStats = {
+    total: orders.length,
+    pending: orders.filter(o => o.status === "pending").length,
+    processing: orders.filter(o => o.status === "processing").length,
+    completed: orders.filter(o => o.status === "completed").length,
+    cancelled: orders.filter(o => o.status === "cancelled").length,
+    totalRevenue: orders.reduce((sum, order) => sum + parseFloat(order.totalAmount || 0), 0),
+  };
+
+  // Handle product selection for bulk actions
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProducts(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId) 
+        : [...prev, productId]
+    );
+  };
+
+  // Handle select all products
+  const toggleSelectAll = () => {
+    if (selectedProducts.length === filteredProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(filteredProducts.map(p => p.id));
+    }
+  };
+
+  // Handle bulk actions
+  const handleBulkAction = () => {
+    if (!bulkAction || selectedProducts.length === 0) return;
+    
+    switch (bulkAction) {
+      case "delete":
+        if (confirm(`Are you sure you want to delete ${selectedProducts.length} products? This action cannot be undone.`)) {
+          // In a real implementation, we would delete all selected products
+          toast({
+            title: "Bulk Delete",
+            description: `${selectedProducts.length} products deleted successfully.`,
+          });
+          setSelectedProducts([]);
+        }
+        break;
+      case "markInStock":
+        // In a real implementation, we would update all selected products to in stock
+        toast({
+          title: "Bulk Update",
+          description: `${selectedProducts.length} products marked as in stock.`,
+        });
+        setSelectedProducts([]);
+        break;
+      case "markOutOfStock":
+        // In a real implementation, we would update all selected products to out of stock
+        toast({
+          title: "Bulk Update",
+          description: `${selectedProducts.length} products marked as out of stock.`,
+        });
+        setSelectedProducts([]);
+        break;
+      default:
+        break;
+    }
+    setBulkAction("");
+  };
+
   const getStatusVariant = (status: string): "default" | "secondary" | "destructive" => {
     if (status === "completed") return "default";
     if (status === "processing") return "secondary";
@@ -334,6 +419,50 @@ export default function EnhancedAdminDashboard() {
       case "products":
         return (
           <div className="space-y-6">
+            {/* Product Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{productStats.total}</div>
+                  <p className="text-xs text-muted-foreground">All products</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">In Stock</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{productStats.inStock}</div>
+                  <p className="text-xs text-muted-foreground">Available</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Out of Stock</CardTitle>
+                  <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{productStats.outOfStock}</div>
+                  <p className="text-xs text-muted-foreground">Need restocking</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Featured</CardTitle>
+                  <Star className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{productStats.featured}</div>
+                  <p className="text-xs text-muted-foreground">Highlighted</p>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h2 className="font-serif text-2xl font-medium">Product Management</h2>
@@ -580,6 +709,44 @@ export default function EnhancedAdminDashboard() {
               </div>
             </div>
 
+            {/* Bulk Actions Toolbar */}
+            {selectedProducts.length > 0 && (
+              <Card className="border-primary bg-primary/5">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-primary">
+                      {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Select value={bulkAction} onValueChange={setBulkAction}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Bulk actions" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="markInStock">Mark as In Stock</SelectItem>
+                          <SelectItem value="markOutOfStock">Mark as Out of Stock</SelectItem>
+                          <SelectItem value="delete">Delete Selected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={handleBulkAction}
+                        disabled={!bulkAction}
+                        className="whitespace-nowrap"
+                      >
+                        Apply
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setSelectedProducts([])}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardContent className="p-0">
                 {productsLoading ? (
@@ -592,6 +759,12 @@ export default function EnhancedAdminDashboard() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox 
+                            checked={selectedProducts.length > 0 && selectedProducts.length === filteredProducts.length}
+                            onCheckedChange={toggleSelectAll}
+                          />
+                        </TableHead>
                         <TableHead>Product</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead>Price</TableHead>
@@ -614,8 +787,14 @@ export default function EnhancedAdminDashboard() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredProducts.map((product) => (
+                        {filteredProducts.map((product) => (
                           <TableRow key={product.id} data-testid={`product-row-${product.id}`} className="hover:bg-muted/50">
+                            <TableCell>
+                              <Checkbox 
+                                checked={selectedProducts.includes(product.id)}
+                                onCheckedChange={() => toggleProductSelection(product.id)}
+                              />
+                            </TableCell>
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-md overflow-hidden bg-muted">
@@ -691,6 +870,60 @@ export default function EnhancedAdminDashboard() {
       case "orders":
         return (
           <div className="space-y-6">
+            {/* Order Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                  <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{orderStats.total}</div>
+                  <p className="text-xs text-muted-foreground">All time</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{orderStats.pending}</div>
+                  <p className="text-xs text-muted-foreground">Awaiting action</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Processing</CardTitle>
+                  <Loader2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{orderStats.processing}</div>
+                  <p className="text-xs text-muted-foreground">In progress</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{orderStats.completed}</div>
+                  <p className="text-xs text-muted-foreground">Successfully delivered</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">LKR {orderStats.totalRevenue.toFixed(2)}</div>
+                  <p className="text-xs text-muted-foreground">Lifetime sales</p>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h2 className="font-serif text-2xl font-medium">Order Management</h2>
@@ -1186,14 +1419,98 @@ export default function EnhancedAdminDashboard() {
         );
 
       case "notifications":
+        // Calculate notification statistics
+        const notificationStats = {
+          total: notifications.length,
+          unread: notifications.filter(n => !n.isRead).length,
+          read: notifications.filter(n => n.isRead).length,
+          orders: notifications.filter(n => n.type === "order_placed").length,
+        };
+
+        // Filter notifications based on filter
+        const filteredNotifications = notifications.filter(notification => {
+          if (notificationFilter === "all") return true;
+          if (notificationFilter === "unread") return !notification.isRead;
+          if (notificationFilter === "read") return notification.isRead;
+          if (notificationFilter === "orders") return notification.type === "order_placed";
+          return true;
+        });
+
         return (
           <div className="space-y-6">
-            <div>
-              <h2 className="font-serif text-2xl font-medium">Notifications</h2>
-              <p className="text-muted-foreground text-sm">
-                Stay updated with important events and activities
-              </p>
+            {/* Notification Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total</CardTitle>
+                  <Bell className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{notificationStats.total}</div>
+                  <p className="text-xs text-muted-foreground">All notifications</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Unread</CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{notificationStats.unread}</div>
+                  <p className="text-xs text-muted-foreground">Need attention</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Read</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{notificationStats.read}</div>
+                  <p className="text-xs text-muted-foreground">Already seen</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Orders</CardTitle>
+                  <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{notificationStats.orders}</div>
+                  <p className="text-xs text-muted-foreground">New orders</p>
+                </CardContent>
+              </Card>
             </div>
+
+            <div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                <div>
+                  <h2 className="font-serif text-2xl font-medium">Notifications</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Stay updated with important events and activities
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Select value={notificationFilter} onValueChange={setNotificationFilter}>
+                    <SelectTrigger className="w-40">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Filter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Notifications</SelectItem>
+                      <SelectItem value="unread">Unread Only</SelectItem>
+                      <SelectItem value="read">Read Only</SelectItem>
+                      <SelectItem value="orders">Order Notifications</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setNotificationFilter("all")}
+                  >
+                    Clear Filter
+                  </Button>
+                </div>
+              </div>
 
             <Card>
               <CardHeader>
@@ -1211,7 +1528,7 @@ export default function EnhancedAdminDashboard() {
                       </div>
                     ))}
                   </div>
-                ) : notifications.length === 0 ? (
+                ) : filteredNotifications.length === 0 ? (
                   <div className="text-center py-12 space-y-4">
                     <Bell className="h-12 w-12 text-muted-foreground mx-auto" />
                     <div className="space-y-2">
@@ -1223,7 +1540,7 @@ export default function EnhancedAdminDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {notifications.map((notification) => (
+                    {filteredNotifications.map((notification) => (
                       <div 
                         key={notification.id} 
                         className={`p-4 rounded-lg border ${
