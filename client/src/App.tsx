@@ -27,6 +27,7 @@ function Router() {
   return (
     <Switch>
       {isLoading || !isAuthenticated ? (
+        // Show public routes for unauthenticated users or while loading
         <>
           <Route path="/" component={Landing} />
           <Route path="/menu" component={Menu} />
@@ -39,6 +40,7 @@ function Router() {
           <Route component={NotFound} />
         </>
       ) : (
+        // Show authenticated routes for logged-in users
         <>
           <Route path="/" component={Home} />
           <Route path="/menu" component={Menu} />
