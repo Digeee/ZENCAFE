@@ -138,7 +138,13 @@ router.get("/api/me", async (req: Request, res: Response) => {
   const dev = process.env.NODE_ENV === 'development';
   const user = (req.user as any) || null;
   const isAuthenticated = dev ? !!user : !!user;
-  const isAdmin = !!(user && user.isAdmin);
+  
+  // In development mode, check if user exists and assign admin status
+  let isAdmin = !!(user && user.isAdmin);
+  if (dev && user) {
+    isAdmin = true; // Auto-admin in dev mode
+  }
+  
   res.json({ isAuthenticated, isAdmin, user });
 });
 
