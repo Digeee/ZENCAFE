@@ -90,19 +90,29 @@ export function Header({ cartItemCount, onCartClick }: HeaderProps) {
 
             {/* Account button */}
             {isAuthenticated ? (
-              <Link href="/dashboard" data-testid="link-dashboard">
-                <Button variant="ghost" size="icon">
-                  {user?.profileImageUrl ? (
-                    <img
-                      src={user.profileImageUrl}
-                      alt="Profile"
-                      className="h-6 w-6 rounded-full object-cover"
-                    />
-                  ) : (
-                    <User className="h-5 w-5" />
-                  )}
+              <div className="flex items-center gap-2">
+                <Link href="/dashboard" data-testid="link-dashboard">
+                  <Button variant="ghost" size="icon">
+                    {user?.profileImageUrl ? (
+                      <img
+                        src={user.profileImageUrl}
+                        alt="Profile"
+                        className="h-6 w-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5" />
+                    )}
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.href = "/api/logout"}
+                  data-testid="button-logout"
+                >
+                  Log Out
                 </Button>
-              </Link>
+              </div>
             ) : (
               <Button
                 variant="default"
