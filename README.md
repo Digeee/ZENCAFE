@@ -1,1 +1,1 @@
-Complete Order management system
+Complete Order management system for an Coffee Shop 
