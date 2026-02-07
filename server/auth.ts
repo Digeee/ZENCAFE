@@ -258,5 +258,3 @@ export const isAdmin: RequestHandler = async (req, res, next) => {
 
   next();
 };
-
-

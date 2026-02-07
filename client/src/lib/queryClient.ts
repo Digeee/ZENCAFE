@@ -1,5 +1,4 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import React, { createContext, useEffect, useState } from "react";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -25,42 +24,12 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-function buildUrlFromQueryKey(queryKey: unknown[]): string {
-  const base = String(queryKey[0] ?? "");
-  const pathParts: string[] = [];
-  const params: Record<string, string> = {};
-
-  for (let i = 1; i < queryKey.length; i++) {
-    const part = queryKey[i];
-    if (part == null) continue;
-    const t = typeof part;
-    if (t === "string" || t === "number" || t === "boolean") {
-      pathParts.push(encodeURIComponent(String(part)));
-    } else if (t === "object") {
-      const obj = part as Record<string, unknown>;
-      for (const [k, v] of Object.entries(obj)) {
-        if (v == null) continue;
-        params[k] = String(v);
-      }
-    }
-  }
-
-  const path = [base, ...pathParts].join("/");
-  const qs = Object.keys(params).length
-    ? "?" + Object.entries(params)
-        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-        .join("&")
-    : "";
-  return path + qs;
-}
-
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const url = buildUrlFromQueryKey(queryKey as unknown[]);
-    const res = await fetch(url, {
+    const res = await fetch(queryKey.join("/") as string, {
       credentials: "include",
     });
 
@@ -86,46 +55,3 @@ export const queryClient = new QueryClient({
     },
   },
 });
-
-type AuthState = {
-  isAuthenticated: boolean;
-  isAdmin: boolean;
-  isLoading: boolean;
-  user?: any;
-};
-
-export const AuthContext = createContext<AuthState | null>(null);
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    isAuthenticated: false,
-    isAdmin: false,
-    isLoading: true,
-    user: undefined,
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/me", { credentials: "include" });
-        const data = await res.json();
-        if (!cancelled) {
-          setState({
-            isAuthenticated: !!data.isAuthenticated,
-            isAdmin: !!data.isAdmin,
-            isLoading: false,
-            user: data.user || undefined,
-          });
-        }
-      } catch {
-        if (!cancelled) {
-          setState({ isAuthenticated: false, isAdmin: false, isLoading: false, user: undefined });
-        }
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  return React.createElement(AuthContext.Provider, { value: state }, children);
-}

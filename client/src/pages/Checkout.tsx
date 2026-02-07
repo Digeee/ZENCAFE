@@ -71,18 +71,13 @@ export default function Checkout() {
       };
       return await apiRequest("POST", "/api/orders", orderData);
     },
-    onSuccess: async (res) => {
+    onSuccess: (data) => {
       clearCart();
       toast({
         title: "Order placed successfully!",
         description: "Thank you for your order. We'll process it shortly.",
       });
-      try {
-        const order = await res.json();
-        setLocation(`/dashboard?order=${order.id}`);
-      } catch {
-        setLocation(`/dashboard`);
-      }
+      setLocation(`/dashboard?order=${data.id}`);
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {

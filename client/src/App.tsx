@@ -1,6 +1,6 @@
 // Main app component with routing and layout
 import { Switch, Route } from "wouter";
-import { queryClient, AuthProvider } from "./lib/queryClient";
+import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip";
@@ -27,7 +27,6 @@ function Router() {
   return (
     <Switch>
       {isLoading || !isAuthenticated ? (
-        // Show public routes for unauthenticated users or while loading
         <>
           <Route path="/" component={Landing} />
           <Route path="/menu" component={Menu} />
@@ -40,7 +39,6 @@ function Router() {
           <Route component={NotFound} />
         </>
       ) : (
-        // Show authenticated routes for logged-in users
         <>
           <Route path="/" component={Home} />
           <Route path="/menu" component={Menu} />
@@ -84,9 +82,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
+        <AppContent />
       </TooltipProvider>
     </QueryClientProvider>
   );
