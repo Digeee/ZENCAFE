@@ -1681,6 +1681,7 @@ export default function EnhancedAdminDashboard() {
               </CardContent>
             </Card>
           </div>
+        </div>
         );
 
       default:
