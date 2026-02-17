@@ -1,7 +1,7 @@
 import express, { type Request, type Response, type Router, type Express } from "express";
 import { storage } from "./storage";
 import { isAdmin, isAuthenticated } from "./auth";
-import type { Product } from "@shared/schema";
+import { type Product, insertProductSchema, insertCategorySchema, insertOrderSchema } from "@shared/schema";
 
 const router: Router = express.Router();
 
@@ -25,14 +25,14 @@ router.get("/api/categories", async (_req: Request, res: Response) => {
 router.get("/api/products", async (req: Request, res: Response) => {
   const categorySlug = req.query.category as string;
   const featuredParam = req.query.featured;
-  
+
   let items: Product[];
   if (categorySlug) {
     items = await storage.getProductsByCategorySlug(categorySlug);
   } else {
     items = await storage.getProducts();
   }
-  
+
   const filtered = featuredParam ? items.filter(p => !!p.featured) : items;
   res.json(filtered);
 });
@@ -54,22 +54,26 @@ router.get("/api/admin/products", isAdmin, async (_req: Request, res: Response) 
 
 router.post("/api/admin/products", isAdmin, async (req: Request, res: Response) => {
   try {
-    const product = await storage.createProduct(req.body);
+    const productData = insertProductSchema.parse(req.body);
+    const product = await storage.createProduct(productData);
     res.status(201).json(product);
   } catch (e: any) {
+    if (e.errors) return res.status(400).json(e);
     res.status(400).json({ message: e?.message || "Failed to create product" });
   }
 });
 
 router.put("/api/admin/products/:id", isAdmin, async (req: Request, res: Response) => {
   try {
-    const product = await storage.updateProduct(req.params.id, req.body);
+    const productData = insertProductSchema.partial().parse(req.body);
+    const product = await storage.updateProduct(req.params.id, productData);
     if (!product) {
       res.status(404).json({ message: "Not Found" });
       return;
     }
     res.json(product);
   } catch (e: any) {
+    if (e.errors) return res.status(400).json(e);
     res.status(400).json({ message: e?.message || "Failed to update product" });
   }
 });
@@ -106,14 +110,13 @@ router.post("/api/admin/categories/seed", isAdmin, async (_req: Request, res: Re
 router.post("/api/orders", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const userId = (req.user as any)?.claims?.sub || "local-dev-user";
-    const { items, ...orderData } = req.body as any;
-    if (!Array.isArray(items) || items.length === 0) {
-      res.status(400).json({ message: "Order must contain items" });
-      return;
-    }
+    const body = insertOrderSchema.parse(req.body);
+    const { items, ...orderData } = body;
+
     const order = await storage.createOrder(orderData, userId, items);
     res.status(201).json(order);
   } catch (e: any) {
+    if (e.errors) return res.status(400).json(e);
     res.status(400).json({ message: e?.message || "Failed to create order" });
   }
 });
@@ -135,9 +138,8 @@ router.get("/api/orders/items", isAuthenticated, async (req: Request, res: Respo
 });
 
 router.get("/api/me", async (req: Request, res: Response) => {
-  const dev = process.env.NODE_ENV === 'development';
   const user = (req.user as any) || null;
-  const isAuthenticated = dev ? !!user : !!user;
+  const isAuthenticated = !!user;
   const isAdmin = !!(user && user.isAdmin);
   res.json({ isAuthenticated, isAdmin, user });
 });
@@ -195,7 +197,7 @@ router.get("/api/admin/notifications", isAdmin, async (req: Request, res: Respon
   try {
     // For now, we'll return all notifications with null userId (admin notifications)
     // In a real implementation, we might have user-specific notifications as well
-    const notifications = await storage.getNotifications(null as any);
+    const notifications = await storage.getNotifications(null);
     res.json(notifications);
   } catch (error: any) {
     res.status(500).json({ message: error?.message || "Failed to fetch notifications" });
@@ -218,7 +220,7 @@ router.patch("/api/admin/notifications/:id/read", isAdmin, async (req: Request, 
 router.get("/api/admin/notifications/unread-count", isAdmin, async (req: Request, res: Response) => {
   try {
     // For now, we'll count all unread notifications with null userId (admin notifications)
-    const count = await storage.getUnreadNotificationsCount(null as any);
+    const count = await storage.getUnreadNotificationsCount(null);
     res.json({ count });
   } catch (error: any) {
     res.status(500).json({ message: error?.message || "Failed to fetch unread notifications count" });
@@ -242,7 +244,7 @@ router.get("/api/placeholder/:width/:height", (req: Request, res: Response) => {
   if (!/^\d+$/.test(width) || !/^\d+$/.test(height)) {
     return res.status(400).json({ message: "Invalid dimensions" });
   }
-  
+
   // Redirect to a placeholder service
   res.redirect(`https://placehold.co/${width}x${height}?text=ZEN+CAFE`);
 });
@@ -250,11 +252,11 @@ router.get("/api/placeholder/:width/:height", (req: Request, res: Response) => {
 router.get("/api/placeholder/:category", (req: Request, res: Response) => {
   const { category } = req.params;
   const validCategories = ['coffee-category', 'tea-category', 'pastries-category', 'new-coffee'];
-  
+
   if (!validCategories.includes(category)) {
     return res.status(400).json({ message: "Invalid category" });
   }
-  
+
   // Map categories to specific images or use generic placeholders
   const categoryImages: Record<string, string> = {
     'coffee-category': 'https://placehold.co/400x300/8B4513/FFFFFF?text=Coffee',
@@ -262,7 +264,7 @@ router.get("/api/placeholder/:category", (req: Request, res: Response) => {
     'pastries-category': 'https://placehold.co/400x300/D2691E/FFFFFF?text=Pastries',
     'new-coffee': 'https://placehold.co/400x400/8B4513/FFFFFF?text=New+Coffee'
   };
-  
+
   res.redirect(categoryImages[category]);
 });
 

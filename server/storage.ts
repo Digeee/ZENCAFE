@@ -89,7 +89,7 @@ export class DatabaseStorage implements IStorage {
         .insert(users)
         .values(userData)
         .onDuplicateKeyUpdate({ set: userData });
-      
+
       // Get the inserted/updated user
       const [user] = await db.select().from(users).where(eq(users.id, userData.id));
       return user;
@@ -115,9 +115,9 @@ export class DatabaseStorage implements IStorage {
       ...categoryData,
       id: nanoid()
     } as any;
-    
+
     await db.insert(categories).values(dataWithId);
-    
+
     // Get the inserted category
     const [category] = await db.select().from(categories).where(eq(categories.id, dataWithId.id));
     return category;
@@ -139,12 +139,14 @@ export class DatabaseStorage implements IStorage {
 
   async getProductsByCategorySlug(categorySlug: string): Promise<Product[]> {
     // Join products with categories to filter by slug
-    return await db
-      .select(products)
+    const rows = await db
+      .select()
       .from(products)
       .innerJoin(categories, eq(products.categoryId, categories.id))
       .where(eq(categories.slug, categorySlug))
       .orderBy(desc(products.featured), desc(products.createdAt));
+
+    return rows.map((r: any) => r.products);
   }
 
   async getProductById(id: string): Promise<Product | undefined> {
@@ -163,9 +165,9 @@ export class DatabaseStorage implements IStorage {
       id: nanoid(),
       slug: productData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     } as any;
-    
+
     await db.insert(products).values(dataWithId);
-    
+
     // Get the inserted product
     const [product] = await db.select().from(products).where(eq(products.id, dataWithId.id));
     return product;
@@ -181,7 +183,7 @@ export class DatabaseStorage implements IStorage {
       .update(products)
       .set(updates)
       .where(eq(products.id, id));
-    
+
     // Get the updated product
     const [product] = await db.select().from(products).where(eq(products.id, id));
     return product;
@@ -217,7 +219,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createOrder(
-    orderData: Omit<InsertOrder, 'userId'>,
+    orderData: Omit<InsertOrder, 'userId' | 'items'>,
     userId: string,
     items: Array<{ productId: string; quantity: number; price: string }>
   ): Promise<Order> {
@@ -226,11 +228,11 @@ export class DatabaseStorage implements IStorage {
       id: nanoid(),
       userId
     } as any;
-    
+
     await db
       .insert(orders)
       .values(dataWithId);
-    
+
     // Get the inserted order
     const [order] = await db.select().from(orders).where(eq(orders.id, dataWithId.id));
 
@@ -246,7 +248,7 @@ export class DatabaseStorage implements IStorage {
           quantity: item.quantity,
           price: item.price
         } as any;
-        
+
         await db.insert(orderItems).values(orderItemData);
       }
     }
@@ -254,7 +256,7 @@ export class DatabaseStorage implements IStorage {
     // Create notification for admins about the new order
     const totalAmount = parseFloat(order.totalAmount).toFixed(2);
     const notificationMessage = `New order #${order.id.substring(0, 8)} placed by ${order.customerName} for LKR ${totalAmount}`;
-    
+
     // In a real implementation, we would notify all admins
     // For now, we'll create a notification that can be fetched by the admin panel
     await this.createNotification({
@@ -273,7 +275,7 @@ export class DatabaseStorage implements IStorage {
       .update(orders)
       .set({ status: status as any, updatedAt: new Date() } as any)
       .where(eq(orders.id, id));
-    
+
     // Get the updated order
     const [order] = await db.select().from(orders).where(eq(orders.id, id));
     return order;
@@ -306,11 +308,11 @@ export class DatabaseStorage implements IStorage {
       ...messageData,
       id: nanoid()
     } as any;
-    
+
     await db
       .insert(contactMessages)
       .values(dataWithId);
-    
+
     // Get the inserted message
     const [message] = await db.select().from(contactMessages).where(eq(contactMessages.id, dataWithId.id));
     return message;
@@ -321,7 +323,7 @@ export class DatabaseStorage implements IStorage {
       .update(contactMessages)
       .set({ status: status as any, updatedAt: new Date() } as any)
       .where(eq(contactMessages.id, id));
-    
+
     // Get the updated message
     const [message] = await db.select().from(contactMessages).where(eq(contactMessages.id, id));
     return message;
@@ -329,11 +331,11 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== NOTIFICATION OPERATIONS ====================
 
-  async getNotifications(userId: string): Promise<Notification[]> {
+  async getNotifications(userId: string | null): Promise<Notification[]> {
     return await db
       .select()
       .from(notifications)
-      .where(eq(notifications.userId, userId))
+      .where(userId ? eq(notifications.userId, userId) : isNull(notifications.userId))
       .orderBy(desc(notifications.createdAt));
   }
 
@@ -342,11 +344,11 @@ export class DatabaseStorage implements IStorage {
       ...notificationData,
       id: nanoid()
     } as any;
-    
+
     await db
       .insert(notifications)
       .values(dataWithId);
-    
+
     // Get the inserted notification
     const [notification] = await db.select().from(notifications).where(eq(notifications.id, dataWithId.id));
     return notification;
@@ -357,7 +359,7 @@ export class DatabaseStorage implements IStorage {
       .update(notifications)
       .set({ isRead: true, updatedAt: new Date() } as any)
       .where(eq(notifications.id, id));
-    
+
     // Get the updated notification
     const [notification] = await db.select().from(notifications).where(eq(notifications.id, id));
     return notification;
@@ -371,7 +373,7 @@ export class DatabaseStorage implements IStorage {
         userId ? eq(notifications.userId, userId) : isNull(notifications.userId),
         eq(notifications.isRead, false)
       ));
-    
+
     return result[0]?.count || 0;
   }
 
