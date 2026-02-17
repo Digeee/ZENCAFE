@@ -1,11 +1,22 @@
 // Auth hook
-import { useContext } from "react";
-import { AuthContext } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  const { data, isLoading } = useQuery({
+    queryKey: ["/api/me"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/me");
+      return await res.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+  });
+
+  return {
+    isAuthenticated: data?.isAuthenticated ?? false,
+    isAdmin: data?.isAdmin ?? false,
+    isLoading,
+    user: data?.user ?? null,
+  };
 }

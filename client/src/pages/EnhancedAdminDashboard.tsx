@@ -99,7 +99,7 @@ export default function EnhancedAdminDashboard() {
     enabled: isAdmin,
   });
 
-  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
+  const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["/api/admin/users"],
     enabled: isAdmin,
   });

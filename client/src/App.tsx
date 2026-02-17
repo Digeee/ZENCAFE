@@ -6,6 +6,7 @@ import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { useAuth } from "./hooks/useAuth";
 import { useCart } from "./hooks/useCart";
+import { AuthContext } from "./lib/queryClient";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import { CartDrawer } from "./components/CartDrawer";
@@ -57,24 +58,27 @@ function Router() {
 
 function AppContent() {
   const cart = useCart();
+  const auth = useAuth();
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header cartItemCount={cart.itemCount} onCartClick={cart.openCart} />
-      <main className="flex-1">
-        <Router />
-      </main>
-      <Footer />
-      <CartDrawer
-        isOpen={cart.isOpen}
-        onClose={cart.closeCart}
-        cart={cart.cart}
-        total={cart.total}
-        onUpdateQuantity={cart.updateQuantity}
-        onRemoveItem={cart.removeItem}
-      />
-      <Toaster />
-    </div>
+    <AuthContext.Provider value={auth}>
+      <div className="flex flex-col min-h-screen">
+        <Header cartItemCount={cart.itemCount} onCartClick={cart.openCart} />
+        <main className="flex-1">
+          <Router />
+        </main>
+        <Footer />
+        <CartDrawer
+          isOpen={cart.isOpen}
+          onClose={cart.closeCart}
+          cart={cart.cart}
+          total={cart.total}
+          onUpdateQuantity={cart.updateQuantity}
+          onRemoveItem={cart.removeItem}
+        />
+        <Toaster />
+      </div>
+    </AuthContext.Provider>
   );
 }
 

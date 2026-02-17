@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { createContext, useContext } from "react";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -6,6 +7,17 @@ async function throwIfResNotOk(res: Response) {
     throw new Error(`${res.status}: ${text}`);
   }
 }
+
+// Auth context type
+interface AuthContextType {
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  isLoading: boolean;
+  user: any | null;
+}
+
+// Create auth context
+export const AuthContext = createContext<AuthContextType | null>(null);
 
 export async function apiRequest(
   method: string,
