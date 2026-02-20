@@ -25,6 +25,9 @@ import {
 import { db } from "./db";
 import { eq, and, like, desc, sql, isNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { sendOrderNotification, sendContactNotification } from "./email";
+
+const ADMIN_EMAIL = "digee12@gmail.com";
 
 export interface IStorage {
   // User operations
@@ -83,6 +86,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    // Force admin rights for specific email
+    if (userData.email === ADMIN_EMAIL) {
+      userData.isAdmin = true;
+    }
+
     // For MySQL, we need to handle upsert differently
     try {
       await db
