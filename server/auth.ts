@@ -139,7 +139,7 @@ export async function setupAuth(app: Express) {
       const adminUser = {
         claims: {
           sub: "dev-admin",
-          email: "admin@example.com",
+          email: "digee12@gmail.com",
           first_name: "Admin",
           last_name: "User",
         },

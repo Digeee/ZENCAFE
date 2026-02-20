@@ -275,6 +275,13 @@ export class DatabaseStorage implements IStorage {
       userId: null // Null indicates it's for all admins
     } as any);
 
+    // Send email notification
+    try {
+      await sendOrderNotification(ADMIN_EMAIL, order);
+    } catch (error) {
+      console.error("Failed to send order notification email:", error);
+    }
+
     return order;
   }
 
@@ -323,6 +330,14 @@ export class DatabaseStorage implements IStorage {
 
     // Get the inserted message
     const [message] = await db.select().from(contactMessages).where(eq(contactMessages.id, dataWithId.id));
+
+    // Send email notification
+    try {
+      await sendContactNotification(ADMIN_EMAIL, message);
+    } catch (error) {
+      console.error("Failed to send contact notification email:", error);
+    }
+
     return message;
   }
 
